@@ -1,0 +1,1978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copy of a Copy</title>
+<meta name="description" content="An invented photocopy shop and zine press. Every pass through the glass moves the page one step down the Redaction typeface.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500&family=Redaction:ital,wght@0,400;0,700;1,400&family=Redaction+10:ital,wght@0,400;0,700;1,400&family=Redaction+20:ital,wght@0,400;0,700;1,400&family=Redaction+35:ital,wght@0,400;0,700;1,400&family=Redaction+50:ital,wght@0,400;0,700;1,400&family=Redaction+70:ital,wght@0,400;0,700;1,400&family=Redaction+100:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
+<style>
+/* Layout idea: a copier run. Each section is a different paper stock, and the type moves between cuts letter by letter. */
+:root {
+  --paper: #f2f3ef;
+  --toner: #121311;
+  --goldenrod: #f5b800;
+  --sky: #8ccbf0;
+  --stock: #ff6ba9;
+  --ash: #a9aba4;
+  --display: "Redaction", "Times New Roman", Times, serif;
+  --sans: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --ease: cubic-bezier(.22, 1, .36, 1);
+  --gut: clamp(16px, 3.5vw, 48px);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html.lenis { scroll-behavior: auto; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--toner);
+  font-family: var(--sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  font-synthesis: none;
+  overflow-x: clip;
+}
+h1, h2, h3, p, ol, ul, fieldset, dl, dd { margin: 0; padding: 0; }
+ol, ul { list-style: none; }
+fieldset { border: 0; min-width: 0; }
+h1, h2 { font-family: var(--display); font-weight: 400; text-wrap: balance; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
+
+/* The seven cuts, one per generation */
+.g0 { font-family: "Redaction", "Times New Roman", Times, serif; }
+.g1 { font-family: "Redaction 10", "Times New Roman", Times, serif; }
+.g2 { font-family: "Redaction 20", "Times New Roman", Times, serif; }
+.g3 { font-family: "Redaction 35", "Times New Roman", Times, serif; }
+.g4 { font-family: "Redaction 50", "Times New Roman", Times, serif; }
+.g5 { font-family: "Redaction 70", "Times New Roman", Times, serif; }
+.g6 { font-family: "Redaction 100", "Times New Roman", Times, serif; }
+
+.label { font-size: .875rem; line-height: 1.43; font-variant-numeric: tabular-nums; }
+
+/* Nav */
+/* A header strip across the whole page: four equal columns, so the redaction bar has a long way to travel */
+.nav {
+  position: fixed;
+  z-index: 20;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  background: var(--paper);
+  color: var(--toner);
+  border-bottom: 1.5px solid var(--toner);
+  overflow: hidden;
+  font-family: var(--display);
+  font-size: 1.0625rem;
+  line-height: 20px;
+}
+.nav a {
+  flex: 1 1 0;
+  padding: 8px 16px;
+  text-decoration: none;
+}
+.nav a:first-of-type { padding-left: var(--gut); }
+.nav a:hover { text-decoration: underline; }
+.nav.live a:hover { text-decoration: none; }
+.nav a:focus-visible { outline-offset: -4px; }
+/* the redaction bar: white in difference mode, so it reads as toner and turns the text under it to paper */
+.nav-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  background: #fff;
+  mix-blend-mode: difference;
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+/* Hero: the copier glass */
+/* stacked above the next section, so the pixel reveal can run over its dithered edge */
+/* A game's title screen: everything centred, bold headline, then the level on a short floor, then the small print */
+.hero {
+  --fs: min(12.4vw, 19vh);
+  --stage: clamp(150px, 26vh, 420px);
+  --pb: 40px;
+  position: relative;
+  z-index: 1;
+  padding: 56px var(--gut) var(--pb);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto var(--stage) auto;
+  row-gap: clamp(16px, 2.4vh, 32px);
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+  min-height: 100vh;
+}
+.level {
+  appearance: none;
+  grid-row: 2;
+  position: relative;
+  z-index: 5;
+  width: min(100%, calc(var(--stage) * 4.2));
+  height: var(--stage);
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.level canvas {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  image-rendering: pixelated;
+}
+.level:focus-visible { outline-offset: -8px; }
+.hero-side {
+  grid-row: 3;
+  position: relative;
+  z-index: 3;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  max-width: 46rem;
+}
+/* The negative: the same page in toner, shown only through the dithered pixels behind the pointer */
+.hero.hero-neg {
+  position: absolute;
+  inset: 0 0 -128px; /* reaches over the 128px edge of the next section */
+  padding-bottom: calc(var(--pb) + 128px); /* so its centred content lines up with the page */
+  min-height: 0;
+  z-index: 4;
+  overflow: hidden;
+  background: var(--toner);
+  color: var(--paper);
+  pointer-events: none;
+  visibility: hidden;
+}
+.plate {
+  grid-row: 1;
+  position: relative;
+  z-index: 2;
+  width: fit-content;
+  font-size: var(--fs);
+  font-weight: 700;
+  line-height: .84;
+  letter-spacing: -.015em;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.plate em { font-weight: 400; } /* Redaction has no bold italic */
+.ink {
+  display: block;
+}
+.ink > span { display: block; white-space: nowrap; }
+.hero-note { position: relative; z-index: 3; }
+.hero-lede {
+  position: relative;
+  z-index: 3;
+  max-width: 38rem;
+  font-size: clamp(1rem, 1vw, 1.375rem);
+  line-height: 1.45;
+}
+
+
+/* Paper stocks */
+.sheet {
+  position: relative;
+  padding: clamp(144px, 16vw, 224px) var(--gut) clamp(80px, 9vw, 128px);
+  scroll-margin-top: 0;
+}
+.edge {
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 100%;
+  height: 128px;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+/* Black sheet: words sit under redaction bars that lift as you scroll, and sharpen once they are clear */
+.reverse { background: var(--toner); color: var(--paper); }
+.w { position: relative; }
+/* the redaction bar: lifts from left to right as the section scrolls in */
+.w::after {
+  content: "";
+  position: absolute;
+  left: -.04em;
+  right: -.3em;
+  top: .08em;
+  bottom: .02em;
+  background: var(--paper);
+  transform: scaleX(var(--cover, 1));
+  transform-origin: 100% 50%;
+  pointer-events: none;
+}
+/* the block is centred on the page, but its lines stay left-aligned so the bars sweep from one clean edge */
+.reverse { --read-fs: clamp(2rem, 5vw, 5.5rem); }
+.read, .side-label { width: min(100%, calc(var(--read-fs) * 16)); margin-inline: auto; }
+.read {
+  font-family: var(--display);
+  font-size: var(--read-fs);
+  line-height: 1.08;
+  letter-spacing: -.01em;
+}
+.read + .read { margin-top: .9em; }
+.side-label { margin-bottom: 32px; color: var(--ash); }
+
+/* Goldenrod sheet: the ladder */
+.ladder-sheet { background: var(--goldenrod); }
+.section-head {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 20px;
+  row-gap: 16px;
+  margin-bottom: clamp(36px, 6vw, 72px);
+}
+.section-head h2 {
+  grid-column: 1 / 8;
+  font-size: clamp(2.5rem, 6.4vw, 5.75rem);
+  line-height: .96;
+  letter-spacing: -.012em;
+}
+.section-head p {
+  grid-column: 9 / -1;
+  align-self: end;
+  max-width: 28em;
+}
+/* The recipe card: a ruled index card. The original has its colour; every photocopy loses it and gains toner */
+.ladder {
+  --title: clamp(1.75rem, 5vw, 3rem);
+  --peek: calc(var(--title) * 1.6);
+  --body: clamp(1.25rem, 3.4vw, 2.25rem);
+  --line: calc(var(--body) * 1.5);
+  display: grid;
+  gap: 24px;
+}
+.card {
+  --rule: color-mix(in srgb, var(--toner) 16%, transparent);
+  --head: color-mix(in srgb, var(--toner) 60%, transparent);
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, #fbfbf7, var(--toner) calc(var(--n) * 6%));
+  box-shadow: 0 1px 2px rgba(18, 19, 17, .2), 0 8px 24px rgba(18, 19, 17, .22);
+  transform: rotate(calc(var(--n) * .3deg));
+}
+.card:first-child { --rule: #a9cde8; --head: #d6453d; }
+/* the shadow a photocopier leaves along the edge of the sheet, wider with every pass */
+.card::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0 0 0 auto;
+  width: calc(var(--n) * 10px);
+  background: linear-gradient(to left, rgba(18, 19, 17, .2), rgba(18, 19, 17, 0));
+  pointer-events: none;
+}
+/* toner dust from the glass, more of it with every pass */
+.card::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  opacity: calc(var(--n) * .34);
+  background-image: var(--dust, none);
+  background-position: calc(var(--n) * 173px) calc(var(--n) * 97px);
+  pointer-events: none;
+}
+.card-tag {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 24px;
+  height: var(--peek);
+  display: flex;
+  align-items: center;
+}
+.card-title {
+  margin: 0;
+  padding: 0 24px;
+  height: var(--peek);
+  font-weight: 400;
+  font-size: var(--title);
+  line-height: var(--peek);
+  letter-spacing: -.01em;
+  white-space: nowrap;
+  border-bottom: 2px solid var(--head);
+}
+.card-lines {
+  display: grid;
+  grid-template-columns: 3fr 8fr;
+  column-gap: 32px;
+  padding: 0 24px;
+  line-height: var(--line);
+  background: repeating-linear-gradient(transparent 0 calc(var(--line) - 1px), var(--rule) calc(var(--line) - 1px) var(--line));
+}
+.card-list { font-size: calc(var(--body) * .62); }
+.card-method { font-size: var(--body); padding-bottom: var(--line); }
+.deck-count { display: none; }
+
+/* Wide screens: the section pins and scrolling lands one copy at a time on the pile */
+.deck-on.ladder-sheet { height: 260vh; padding: 0; }
+.deck-on .deck-pin {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: clip;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 20px;
+  padding: 128px var(--gut) 48px;
+}
+.deck-on .section-head {
+  grid-column: 1 / 4;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+}
+.deck-on .section-head h2 { font-size: clamp(2rem, 3.2vw, 3.25rem); line-height: 1; }
+.deck-on .section-head p { align-self: flex-start; }
+.deck-on .section-head .deck-count {
+  display: block;
+  margin-top: auto;
+  font-family: var(--display);
+  font-size: clamp(1.5rem, 2vw, 2.25rem);
+  line-height: 1.1;
+}
+.deck-on .ladder {
+  --peek: clamp(56px, 11vh, 96px);
+  --title: calc(var(--peek) * .62);
+  --body: min(2.3vw, 3.7vh);
+  grid-column: 4 / -1;
+  position: relative;
+  display: block;
+  min-height: 0;
+}
+/* each copy lands lower on the pile, so the titles of the earlier ones stay in view */
+.deck-on .card {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--n) * var(--peek));
+  height: calc(100vh - 176px - 3 * var(--peek));
+  transform: none;
+}
+.deck-on .card-lines { height: calc(100% - var(--peek)); }
+.deck-on .own { height: 100%; }
+
+/* Stock sheet: the rate card */
+.rates-sheet { background: var(--stock); overflow: clip; }
+/* Changing paper: the new colour comes down the card behind the same dithered edge as between sections */
+.wipe, .stock-band {
+  position: absolute;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.wipe { top: 0; right: 0; bottom: 0; }
+.stock-band { top: 0; width: 100%; height: 128px; image-rendering: pixelated; }
+.rates-sheet > :not(.wipe, .edge, .stock-band) { position: relative; z-index: 2; }
+.rates-sheet .edge, .rates-sheet .stock-band { z-index: 1; }
+.rates { border-top: 1.5px solid var(--toner); }
+.rate {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 20px;
+  align-items: baseline;
+  padding: 12px 8px 16px;
+  border-bottom: 1.5px solid var(--toner);
+  transition: color .14s linear .14s;
+}
+.rate::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: var(--toner);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform .4s var(--ease);
+}
+.rate:hover { color: var(--paper); transition-delay: 0s; }
+.rate:hover::before { transform: scaleX(1); }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/* Printed samples that follow the pointer over the rate card */
+.spec {
+  position: fixed;
+  z-index: 15;
+  left: 0;
+  top: 0;
+  width: 240px;
+  height: 340px;
+  pointer-events: none;
+  visibility: hidden;
+  will-change: transform;
+}
+.spec-tilt { position: absolute; inset: 0; will-change: transform; }
+.spec-scale {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: scale(.82);
+  transition: transform .3s var(--ease), opacity .16s var(--ease);
+}
+.spec.on .spec-scale { opacity: 1; transform: none; }
+.sp {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  visibility: hidden;
+  padding: 20px;
+  color: var(--toner);
+  background: #f6f6f2;
+  box-shadow: 0 16px 40px rgba(18, 19, 17, .32), 0 2px 4px rgba(18, 19, 17, .2);
+}
+.sp.show { visibility: visible; }
+.sp b { display: block; font-weight: 400; line-height: 1; }
+.sp-lines {
+  display: block;
+  margin-top: 16px;
+  height: 200px;
+  background: repeating-linear-gradient(#34352f 0 3px, transparent 3px 12px);
+  -webkit-mask-image: linear-gradient(to right, #000 86%, transparent 86%);
+  mask-image: linear-gradient(to right, #000 86%, transparent 86%);
+}
+.sp-bw::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 16px;
+  background: linear-gradient(to right, #121311, rgba(18, 19, 17, 0));
+}
+.sp-bw b { font-size: 2rem; margin-left: 8px; }
+.sp-bw .sp-lines { margin-left: 8px; }
+.sp-colour { background: #2438d8; color: #fff; }
+.sp-colour i {
+  position: absolute;
+  left: 32px;
+  top: 104px;
+  width: 176px;
+  height: 176px;
+  border-radius: 50%;
+  background: #ff5a1f;
+}
+.sp-colour b { position: relative; font-size: 3.25rem; line-height: .9; }
+.sp-colour u {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 16px;
+  height: 12px;
+  background: linear-gradient(to right, #00b7eb 25%, #ec008c 25% 50%, #ffe600 50% 75%, #121311 75%);
+}
+.sp-zine { background: transparent; overflow: visible; }
+.sp-zine::before {
+  content: "";
+  position: absolute;
+  z-index: -2;
+  inset: 4px -8px -4px 8px;
+  background: #e4e4df;
+  box-shadow: 0 8px 24px rgba(18, 19, 17, .25);
+}
+.sp-zine::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(to right, rgba(18, 19, 17, .28), rgba(18, 19, 17, 0) 12%), var(--stock);
+}
+.sp-zine b { font-size: 4rem; line-height: .88; margin-left: 12px; }
+.sp-zine i {
+  position: absolute;
+  z-index: 1;
+  left: 4px;
+  width: 3px;
+  height: 28px;
+  background: #8a8c86;
+}
+.sp-riso { isolation: isolate; }
+.sp-riso i {
+  position: absolute;
+  left: 32px;
+  top: 112px;
+  width: 168px;
+  height: 168px;
+  border-radius: 50%;
+  mix-blend-mode: multiply;
+}
+.sp-riso .ink-a { background: #ff4f8b; }
+.sp-riso .ink-b { background: #2a4bff; transform: translate(10px, 12px); clip-path: polygon(0 40%, 100% 0, 100% 100%, 0 100%); }
+.sp-riso b { position: absolute; left: 20px; top: 24px; font-size: 3rem; line-height: .95; mix-blend-mode: multiply; color: #ff4f8b; }
+.sp-riso b + b { color: #2a4bff; transform: translate(3px, 3px); }
+.sp-thesis {
+  overflow: visible;
+  background: #14274d;
+  color: #dcb65c;
+  box-shadow: 3px 3px 0 #f6f6f2, 6px 6px 0 #bdbeb8, 8px 8px 0 #14274d, 0 24px 44px rgba(18, 19, 17, .4);
+}
+.sp-thesis::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 16px;
+  background: rgba(0, 0, 0, .35);
+}
+.sp-thesis b { margin: 40px 0 0 16px; font-size: 3rem; }
+.sp-thesis small { display: block; margin: 12px 0 0 16px; font-size: .875rem; }
+.sp-bad { background: #d8d8d1; }
+.sp-bad::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(112deg, #121311 0 9%, transparent 9%),
+    radial-gradient(circle, #121311 1px, transparent 1.5px) 0 0 / 15px 19px,
+    radial-gradient(circle, #121311 1.5px, transparent 2px) 7px 9px / 37px 43px;
+}
+.sp-bad b { position: relative; margin-top: 64px; font-size: 3.25rem; line-height: .92; transform: rotate(4deg); }
+.rate-name {
+  grid-column: 1 / 7;
+  font-size: clamp(1.6rem, 3.6vw, 3.1rem);
+  line-height: 1.08;
+}
+.rate-spec { grid-column: 7 / 11; }
+.rate-price {
+  grid-column: 11 / -1;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+.stocks { margin-top: clamp(36px, 5vw, 60px); }
+.stocks legend { padding: 0; margin-bottom: 12px; }
+.stock-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.stock-opt { position: relative; cursor: pointer; }
+.stock-opt input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+.stock-opt span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 8px 8px;
+  border: 1.5px solid var(--toner);
+  background: var(--paper);
+  font-size: .875rem;
+  line-height: 20px;
+}
+.stock-opt i {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--toner);
+}
+.stock-opt input:checked + span { background: var(--toner); color: var(--paper); }
+.stock-opt input:focus-visible + span { outline: 2px solid var(--toner); outline-offset: 4px; }
+
+/* Two more sheets. Read in order when static; on wider screens they play as one pinned journey */
+.steps-sheet {
+  position: relative;
+  background: var(--sky);
+  padding: 96px var(--gut);
+}
+.edge-v, .walker { display: none; }
+.steps-inner { display: grid; gap: 40px; }
+.steps-inner h2 { font-size: clamp(2.5rem, 6.4vw, 5.75rem); line-height: .96; letter-spacing: -.012em; }
+.steps-row { display: grid; gap: 40px; }
+.steps-row li { display: grid; gap: 12px; }
+.steps-row h3 {
+  margin: 0;
+  font-weight: 400;
+  font-size: clamp(3.25rem, 8.4vw, 8rem);
+  line-height: 1;
+  letter-spacing: -.015em;
+}
+.steps-row p { max-width: 28em; font-size: clamp(1.125rem, 1.4vw, 1.25rem); line-height: 1.45; }
+.lost {
+  position: relative;
+  background: var(--toner);
+  color: var(--paper);
+  padding: 96px var(--gut);
+  display: grid;
+  gap: 24px;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+}
+.lost h2 { font-size: clamp(3.25rem, 12vw, 12rem); line-height: 1; letter-spacing: -.015em; }
+.lost p { max-width: 30em; font-size: clamp(1.125rem, 1.6vw, 1.5rem); line-height: 1.4; }
+
+.journey-on .ladder-sheet { position: sticky; top: var(--zone-stick, 0px); z-index: 1; will-change: transform; }
+.journey-on .track {
+  position: relative;
+  z-index: 3;
+  height: 520vh;
+  margin-top: -100vh;
+  pointer-events: none;
+}
+.journey-on .stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+.journey-on .steps-sheet {
+  position: absolute;
+  inset: 0;
+  padding: 72px 0 40px;
+  will-change: transform;
+}
+.journey-on .edge-v {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: -128px;
+  width: 128px;
+  height: 100%;
+  image-rendering: pixelated;
+}
+.journey-on .walker {
+  display: block;
+  position: absolute;
+  left: 0;
+  image-rendering: pixelated;
+}
+.journey-on .steps-inner {
+  position: relative;
+  height: 100%;
+  grid-template-rows: auto 1fr;
+  will-change: transform;
+}
+.journey-on .steps-inner h2 { padding-inline: var(--gut); font-size: clamp(2rem, 4vw, 3.5rem); }
+.journey-on .steps-row {
+  display: flex;
+  align-items: end;
+  gap: 8vw;
+  width: max-content;
+  padding-inline: var(--gut);
+  will-change: transform;
+}
+/* each step is as wide as its title, so a long title can never run into the next one */
+.journey-on .steps-row li { width: max-content; min-width: min(64vw, 900px); }
+.journey-on .steps-row h3 { font-size: min(10vw, 22vh); white-space: nowrap; }
+.journey-on .lost {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+}
+/* Black sheet: the last page restores itself */
+.last { padding-bottom: 32px; }
+.bring {
+  font-size: clamp(3.75rem, 15.5vw, 16rem);
+  line-height: .88;
+  letter-spacing: -.015em;
+  margin-bottom: clamp(48px, 7vw, 88px);
+}
+.bring .wd { display: inline-block; white-space: nowrap; }
+.foot {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 20px;
+  row-gap: 32px;
+  padding-top: 16px;
+  border-top: 1.5px solid var(--paper);
+}
+.foot > div { grid-column: span 3; }
+.foot .fine { grid-column: 7 / -1; max-width: 46em; }
+.foot dt { color: var(--ash); }
+.foot dl { display: grid; gap: 8px; }
+
+/* on phones the labels only just fit, so columns follow the text instead of being equal */
+@media (max-width: 760px) {
+  .nav { font-size: .9375rem; }
+  .nav a { flex: 1 1 auto; padding: 8px 6px; }
+  .nav a:first-of-type { padding-left: 16px; }
+}
+@media (max-width: 1000px) {
+  .section-head h2, .section-head p { grid-column: 1 / -1; }
+  .section-head p { max-width: 34em; }
+  .foot > div { grid-column: span 6; }
+  .foot .fine { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+  .nav { right: 16px; }
+  .card-lines { grid-template-columns: minmax(0, 1fr); }
+  .card-list { display: none; }
+  .card-tag { position: static; display: block; height: auto; padding: 12px 24px 0; }
+  .rate { row-gap: 2px; }
+  .rate-name, .rate-spec { grid-column: 1 / -1; }
+  .rate-price { grid-column: 1 / -1; text-align: left; }
+  .foot > div { grid-column: 1 / -1; }
+  .hero { --fs: 12.4vw; --stage: 120px; min-height: 0; }
+}
+@media (hover: none) {
+  .pointer-hint { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pointer-hint { display: none; }
+  html { scroll-behavior: auto; }
+  .rate, .rate::before { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav" aria-label="Sections">
+  <a href="#copier">Home</a>
+  <a href="#idea">Idea</a>
+  <a href="#generations">Generations</a>
+  <a href="#steps">Steps</a>
+  <a href="#lost">Lost</a>
+  <a href="#rates">Rates</a>
+  <span class="nav-bar" id="navBar" aria-hidden="true"></span>
+</nav>
+
+<main>
+  <section class="hero" id="copier">
+
+    <h1 class="plate" id="plate">
+      <span class="ink g0" id="inkNow"><span>Copy of a copy,</span><span><em>on purpose</em></span></span>
+    </h1>
+
+    <div class="hero-side">
+      <p class="hero-lede">Lecture notes the night before the exam. Flyers for the band's next show. A thesis that has to be bound by tomorrow. We copy it in black and white or colour, print it on the risograph, then fold, staple or bind it. <span class="pointer-hint">Move across the page to see its negative.</span></p>
+      <p class="hero-note label">Walk-ins only. Open until 2am in exam week. Bring a USB stick or the actual paper.</p>
+    </div>
+
+    <button class="level" id="stage" type="button" aria-label="Run a copy"><canvas id="stageCanvas" aria-hidden="true"></canvas></button>
+
+  </section>
+
+  <section class="sheet reverse" id="idea">
+    <canvas class="edge" data-from="--paper" aria-hidden="true"></canvas>
+    <p class="side-label label">The idea</p>
+    <p class="read" data-read>Every copy loses something. A little ink off the curves, a speck from the glass, a shadow where the lid would not close.</p>
+    <p class="read" data-read>Bring us your lecture notes, your band flyer, your grandmother's recipe, and we will run it as clean as the glass allows.</p>
+    <p class="read" data-read>Or run it seven times, until the words start to crumble, and staple that instead.</p>
+  </section>
+
+  <div class="zone" id="zone">
+  <section class="sheet ladder-sheet" id="generations">
+    <canvas class="edge" data-from="--toner" aria-hidden="true"></canvas>
+    <div class="deck-pin">
+      <div class="section-head">
+        <h2>One recipe card, seven times over</h2>
+        <p>This is every other copy from a run of seven. The type drops two cuts each time, and the sheet creeps further off square.</p>
+        <p class="deck-count label" id="deckCount" aria-hidden="true"></p>
+      </div>
+      <ol class="ladder" id="ladder"></ol>
+    </div>
+  </section>
+
+  <div class="track" id="track">
+    <div class="stage">
+      <section class="steps-sheet" id="stepsPanel">
+        <span id="steps"></span>
+        <canvas class="edge-v" id="edgeV" aria-hidden="true"></canvas>
+        <div class="steps-inner" id="stepsInner">
+          <h2>How a job runs</h2>
+          <canvas class="walker" id="walker" aria-hidden="true"></canvas>
+          <ol class="steps-row" id="stepsRow">
+            <li><span class="label">Step 1</span><h3 class="g0">Bring it</h3><p>On a USB stick or as the actual paper. Walk in, there is no booking.</p></li>
+            <li><span class="label">Step 2</span><h3 class="g0">Pick the paper</h3><p>Plain white, kraft, or a colour from the rate card, up to A3.</p></li>
+            <li><span class="label">Step 3</span><h3 class="g0">Run it</h3><p>Black and white, colour, or two inks on the risograph.</p></li>
+            <li><span class="label">Step 4</span><h3 class="g0">Finish it</h3><p>Folded and stapled, or bound with a hard cover, same day if it is in by noon.</p></li>
+          </ol>
+        </div>
+      </section>
+      <section class="lost" id="lostPanel">
+        <span id="lost"></span>
+        <h2 id="lostTitle">Lost the original?</h2>
+        <p>Bring any copy you have and we will run from that. It will be a little worse. Everything here is.</p>
+      </section>
+    </div>
+  </div>
+  </div>
+
+  <section class="sheet rates-sheet" id="rates">
+    <div class="wipe" id="wipe" aria-hidden="true"></div>
+    <canvas class="stock-band" id="stockBand" aria-hidden="true"></canvas>
+    <canvas class="edge" data-from="--toner" aria-hidden="true"></canvas>
+    <div class="section-head">
+      <h2>What it costs</h2>
+      <p>Prices per side unless the row says otherwise. Paper is included, and so is the guillotine if you ask nicely.</p>
+    </div>
+    <ul class="rates" id="rateList">
+      <li class="rate"><span class="rate-name g3">Black and white copy</span><span class="rate-spec label">A4, 80 gsm</span><span class="rate-price label">$0.12</span></li>
+      <li class="rate"><span class="rate-name g3">Colour copy</span><span class="rate-spec label">A4, 100 gsm</span><span class="rate-price label">$0.45</span></li>
+      <li class="rate"><span class="rate-name g3">Zine run</span><span class="rate-spec label">A5, folded and saddle-stapled, up to 40 pages</span><span class="rate-price label">$1.80 a zine</span></li>
+      <li class="rate"><span class="rate-name g3">Risograph</span><span class="rate-spec label">A3, two inks, 50 sheets minimum</span><span class="rate-price label">$0.38</span></li>
+      <li class="rate"><span class="rate-name g3">Thesis binding</span><span class="rate-spec label">Thermal, hard cover, same day if in by noon</span><span class="rate-price label">$14.00 a book</span></li>
+      <li class="rate"><span class="rate-name g3">Deliberately bad copy</span><span class="rate-spec label">Seven generations of any one page</span><span class="rate-price label">Free</span></li>
+    </ul>
+    <fieldset class="stocks">
+      <legend class="label">Change the paper this card is printed on</legend>
+      <div class="stock-list">
+        <label class="stock-opt"><input type="radio" id="stock-pink" name="stock" value="#ff6ba9" checked><span><i style="background:#ff6ba9"></i>Astro pink</span></label>
+        <label class="stock-opt"><input type="radio" id="stock-blue" name="stock" value="#8ccbf0"><span><i style="background:#8ccbf0"></i>Lunar blue</span></label>
+        <label class="stock-opt"><input type="radio" id="stock-green" name="stock" value="#9fd86b"><span><i style="background:#9fd86b"></i>Terra green</span></label>
+        <label class="stock-opt"><input type="radio" id="stock-kraft" name="stock" value="#c8a273"><span><i style="background:#c8a273"></i>Kraft</span></label>
+        <label class="stock-opt"><input type="radio" id="stock-white" name="stock" value="#f2f3ef"><span><i style="background:#f2f3ef"></i>Plain white</span></label>
+      </div>
+    </fieldset>
+  </section>
+
+  <section class="sheet reverse last" id="visit">
+    <canvas class="edge" data-from="--stock" aria-hidden="true"></canvas>
+    <h2 class="bring" id="bring">Bring your thing</h2>
+    <div class="foot label">
+      <div>
+        <dl>
+          <div><dt>Term time</dt><dd>Mon to Sat, 8am to 10pm</dd></div>
+          <div><dt>Exam weeks</dt><dd>Every day, 8am to 2am</dd></div>
+        </dl>
+      </div>
+      <div>
+        <dl>
+          <div><dt>Where</dt><dd>Ground floor, across from the east gate</dd></div>
+          <div><dt>Queue</dt><dd>Longest at 7:40am on deadline day</dd></div>
+        </dl>
+      </div>
+      <p class="fine">Copy of a Copy is an invented shop, made up for this page. The type is <a href="https://fonts.google.com/specimen/Redaction">Redaction</a> from Google Fonts, in all seven cuts, with Archivo for everything small.</p>
+    </div>
+  </section>
+</main>
+
+<div class="spec" id="spec" aria-hidden="true">
+  <div class="spec-tilt" id="specTilt">
+    <div class="spec-scale">
+      <div class="sp sp-bw"><b class="g3">Lecture 7</b><span class="sp-lines"></span></div>
+      <div class="sp sp-colour"><i></i><b class="g0">Band night</b><u></u></div>
+      <div class="sp sp-zine"><i style="top:64px"></i><i style="top:248px"></i><b class="g6">Zine No. 4</b></div>
+      <div class="sp sp-riso"><i class="ink-a"></i><i class="ink-b"></i><b class="g0">Two inks</b><b class="g0">Two inks</b></div>
+      <div class="sp sp-thesis"><b class="g0">Thesis</b><small>final_final_v7</small></div>
+      <div class="sp sp-bad"><b class="g6">Add the sugar</b></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var CUTS = ['Redaction', 'Redaction 10', 'Redaction 20', 'Redaction 35', 'Redaction 50', 'Redaction 70', 'Redaction 100'];
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var $ = function (id) { return document.getElementById(id); };
+  var setCut = function (el, g) {
+    el.classList.remove('g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6');
+    el.classList.add('g' + g);
+  };
+  function tokenColor(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  /* ---------- 8-bit dither, shared by the section edges and every band ---------- */
+  var BAYER = (function build(n) {
+    if (n === 1) return [[0]];
+    var h = build(n / 2), out = [];
+    for (var y = 0; y < n; y++) {
+      out[y] = [];
+      for (var x = 0; x < n; x++) {
+        var q = h[y % (n / 2)][x % (n / 2)];
+        var quadrant = y < n / 2 ? (x < n / 2 ? 0 : 2) : (x < n / 2 ? 3 : 1);
+        out[y][x] = 4 * q + quadrant;
+      }
+    }
+    return out;
+  })(8);
+  function grit(x, y) {
+    var s = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+    return s - Math.floor(s);
+  }
+  /* wrap each letter in a span so the type itself can carry a transition */
+  function splitLetters(root) {
+    var out = [];
+    (function walk(node) {
+      [].slice.call(node.childNodes).forEach(function (c) {
+        if (c.nodeType !== 3) { walk(c); return; }
+        var frag = document.createDocumentFragment();
+        c.textContent.split('').forEach(function (ch) {
+          if (ch === ' ') { frag.appendChild(document.createTextNode(' ')); return; }
+          var s = document.createElement('span');
+          s.textContent = ch;
+          frag.appendChild(s);
+          out.push(s);
+        });
+        node.replaceChild(frag, c);
+      });
+    })(root);
+    return out;
+  }
+
+  /* ---------- ladder: every other copy from a run of seven ---------- */
+  var ORDINAL = ['Original', '2nd copy', '3rd copy', '4th copy', '5th copy', '6th copy', '7th copy'];
+  var LADDER = [0, 2, 4, 6];
+  $('ladder').innerHTML = LADDER.map(function (cut, i) {
+    /* the copies repeat the original, so only its text is read aloud */
+    return '<li class="card" style="--n:' + i + '"><span class="card-tag label">' + ORDINAL[cut] + ', ' + CUTS[cut] + '</span>' +
+      '<div class="own g' + cut + '"' + (i ? ' aria-hidden="true"' : '') + '><h3 class="card-title">Burnt butter biscuits</h3>' +
+      '<div class="card-lines"><ul class="card-list">' +
+      ['200 g butter', '150 g sugar', '1 egg', '250 g flour', 'A pinch of salt'].map(function (x) { return '<li>' + x + '</li>'; }).join('') +
+      '</ul><p class="card-method">Melt the butter until it foams. Add the sugar when the butter stops talking. Fold in the egg and the flour. Bake until the edges give up.</p></div></div></li>';
+  }).join('');
+  /* a large tile of randomly scattered specks, so the dust never shows a repeating grid */
+  (function () {
+    var cv = document.createElement('canvas'), ctx = cv.getContext('2d');
+    cv.width = cv.height = 720;
+    ctx.fillStyle = '#121311';
+    for (var i = 0; i < 420; i++) {
+      var r = Math.random() < .06 ? 1.1 + Math.random() * .9 : .4 + Math.random() * .5;
+      ctx.beginPath();
+      ctx.arc(Math.random() * 720, Math.random() * 720, r, 0, 6.3);
+      ctx.fill();
+    }
+    $('ladder').style.setProperty('--dust', 'url(' + cv.toDataURL() + ')');
+  })();
+
+  /* ---------- deck: on wide screens, scrolling feeds each card onto the stack and wears it down a cut ---------- */
+  var deckMq = matchMedia('(min-width: 1100px) and (min-height: 620px)');
+  var deckSection = $('generations'), deckSheets = [].slice.call($('ladder').children);
+  var deckOn = false, deckNow = 0, deckGoal = 0, deckRunning = false;
+  /* each sheet's letters, with the cut each one currently shows */
+  var deckLetters = deckSheets.map(function (li, n) {
+    return splitLetters(li.querySelector('.own')).map(function (el) { return { el: el, cut: LADDER[n] }; });
+  });
+  function setSheetCuts(n, reached) {
+    var letters = deckLetters[n];
+    letters.forEach(function (l, i) {
+      var cut = (i + .5) / letters.length < reached ? LADDER[n] : LADDER[n - 1];
+      if (l.cut !== cut) { l.cut = cut; setCut(l.el, cut); }
+    });
+  }
+  function clamp01(v) { return Math.min(1, Math.max(0, v)); }
+  function renderDeck(t) {
+    var seg = t * (LADDER.length - 1), pass = 0, ladderH = $('ladder').clientHeight;
+    deckSheets.forEach(function (li, n) {
+      if (!n) return;
+      var local = clamp01(seg - (n - 1));
+      var feed = 1 - Math.pow(1 - clamp01(local / .5), 3);
+      var scan = clamp01((local - .5) / .5);
+      var y = (1 - feed) * (ladderH - li.offsetTop + 200);
+      var rot = n * .6 + (1 - feed) * (n % 2 ? 4 : -4);
+      li.style.transform = 'translate(' + (n * 6) + 'px,' + y + 'px) rotate(' + rot + 'deg)';
+      /* the card wears down letter by letter once it has landed */
+      setSheetCuts(n, scan);
+      if (scan > .5) pass = n;
+    });
+    $('deckCount').textContent = t < .03 ? 'Original. Keep scrolling to copy it' :
+      ORDINAL[LADDER[pass]] + ', ' + CUTS[LADDER[pass]];
+  }
+  function deckLoop() {
+    deckNow += (deckGoal - deckNow) * .24;
+    if (Math.abs(deckGoal - deckNow) < .0005) { deckNow = deckGoal; deckRunning = false; }
+    renderDeck(deckNow);
+    if (deckRunning) requestAnimationFrame(deckLoop);
+  }
+  function updateDeck(vh) {
+    if (!deckOn) return;
+    var r = deckSection.getBoundingClientRect();
+    /* start once the dither edge has passed, and hold the finished stack for a moment before releasing */
+    var from = vh * .2, to = r.height - vh * 1.25;
+    deckGoal = clamp01((-r.top - from) / (to - from));
+    if (!deckRunning && deckGoal !== deckNow) { deckRunning = true; requestAnimationFrame(deckLoop); }
+  }
+  function setupDeck() {
+    deckOn = !reduce && deckMq.matches;
+    deckSection.classList.toggle('deck-on', deckOn);
+    if (deckOn) { renderDeck(deckNow); return; }
+    deckSheets.forEach(function (li, n) {
+      li.style.transform = '';
+      if (n) setSheetCuts(n, 1);
+    });
+  }
+  setupDeck();
+  deckMq.addEventListener('change', function () { setupDeck(); schedule(); });
+
+  /* ---------- hero: the headline stays crisp, and wears down around the pointer ---------- */
+  (function () {
+    var plate = $('plate'), ink = $('inkNow');
+    var hero = $('copier');
+    /* clone before the letters are split, so the negative stays one solid word in its worst cut */
+    var neg = document.createElement('div');
+    neg.className = 'hero hero-neg';
+    neg.setAttribute('aria-hidden', 'true');
+    [plate, hero.querySelector('.hero-side')].forEach(function (el) {
+      var c = el.cloneNode(true);
+      c.removeAttribute('id');
+      neg.appendChild(c);
+    });
+    var negInk = neg.querySelector('#inkNow');
+    negInk.removeAttribute('id');
+    /* the negative's letters wear in step with the headline, so the animation stays visible through the pixels */
+    var negLetters = splitLetters(negInk);
+    plate.setAttribute('aria-label', 'Copy of a copy, on purpose');
+    ink.setAttribute('aria-hidden', 'true');
+    var letters = splitLetters(ink).map(function (el, i) { return { el: el, neg: negLetters[i], cut: 0, rest: 0, x: 0, y: 0 }; });
+    /* at rest the headline decays as you read it: from crisp Redaction through 10, 20, 35, 50, 70 and 100 */
+    letters.forEach(function (l, i) {
+      l.rest = l.cut = Math.min(6, Math.floor(i / letters.length * 7));
+      setCut(l.el, l.rest);
+      setCut(l.neg, l.rest);
+    });
+    var pointer = null, intro = null, timer = 0;
+    function measure() {
+      var box = plate.getBoundingClientRect();
+      letters.forEach(function (l) {
+        var r = l.el.getBoundingClientRect();
+        l.x = r.left - box.left + r.width / 2;
+        l.y = r.top - box.top + r.height / 2;
+      });
+    }
+    function targetFor(l, i, reach) {
+      if (pointer) {
+        var d = Math.sqrt(Math.pow(l.x - pointer.x, 2) + Math.pow(l.y - pointer.y, 2));
+        return Math.round(6 * Math.pow(Math.max(0, 1 - d / reach), .7));
+      }
+      if (intro !== null) return Math.round(6 * Math.max(0, 1 - Math.abs(i - intro) / 3));
+      return 0;
+    }
+    /* each letter moves one cut per tick, so the wear trails behind the pointer and heals gradually */
+    function step() {
+      var reach = parseFloat(getComputedStyle(plate).fontSize) * .95, settled = true;
+      letters.forEach(function (l, i) {
+        /* wear only ever adds to the resting cut, and heals back down to it */
+        var target = Math.max(l.rest, targetFor(l, i, reach));
+        if (l.cut !== target) {
+          l.cut += l.cut < target ? 1 : -1;
+          setCut(l.el, l.cut);
+          setCut(l.neg, l.cut);
+        }
+        if (l.cut !== l.rest) settled = false;
+      });
+      if (intro !== null) {
+        intro += .7;
+        if (intro > letters.length + 3) intro = null;
+      }
+      if (settled && !pointer && intro === null) { clearInterval(timer); timer = 0; }
+    }
+    function run() { if (!timer) timer = setInterval(step, 45); }
+    /* ---------- the level: a student with a stack of paper walks a short floor toward the pointer ---------- */
+    var stageEl = $('stage'), scv = $('stageCanvas'), sctx = scv.getContext('2d');
+    var C = { '.': null, T: '#121311', W: '#fbfbf7', G: '#9a9c95', S: '#f0b183', K: '#ff6ba9', B: '#8ccbf0', Y: '#f5b800', D: '#3a3b37' };
+    var TOP = [
+      '...TTTTTTTTTT...',
+      '...TWWWWWWWWT...',
+      '...TGGGGGGGGT...',
+      '...TWWWWWWWWT...',
+      '...TTTTTTTTTT...',
+      '....TTTTTTT.....',
+      '...TTTTTTTTT....',
+      '...TTSSSSSTT....',
+      '...TSSSSTSST....',
+      '...TSSSSTSSS....',
+      '...TSSSSSSST....',
+      '....TSSSTTT.....',
+      '.....TSSSST.....',
+      '....TTTTTT......',
+      '...TKKKKKKT.....',
+      '..TKKKKKKKKT....',
+      '..TKTKKKKTKT....',
+      '.TSTKKKKKTST....',
+      '..TTKKKKKKTT....',
+      '...TBBBBBBT.....'
+    ];
+    var LEGS = [
+      ['...TBBTTBBT.....', '...TBBTTBBT.....', '...TTT..TTT.....', '..TTTT..TTTT....'],
+      ['...TBBBTBBT.....', '..TBBT.TBBT.....', '.TTT....TTT.....', '.TTT....TTTT....'],
+      ['...TBBTBBBT.....', '...TBBTBBT......', '....TTTTT.......', '....TTTTTT......']
+    ];
+    var SPR_W = 16, SPR_H = TOP.length + 4;
+    var level = { w: 0, h: 0, cell: 8, ground: 0, x: 8, target: null, flip: false, frame: 0, walking: false, hop: -1, blink: 0, last: 0, light: 0, sheets: [], pile: 6, copierX: 0, pileX: 0 };
+    var HOP = [0, 3, 5, 6, 6, 5, 3, 0];
+    function rect(x, y, w, h, c) { sctx.fillStyle = c; sctx.fillRect(x, y, w, h); }
+    function drawMap(rows, x, y, flip) {
+      rows.forEach(function (row, ry) {
+        for (var rx = 0; rx < row.length; rx++) {
+          var ch = row[rx], c = C[ch];
+          if (!c) continue;
+          var dx = flip ? x + row.length - 1 - rx : x + rx;
+          sctx.fillStyle = c;
+          sctx.fillRect(dx, y + ry, 1, 1);
+        }
+      });
+    }
+    function drawStudent() {
+      var frame = level.walking ? 1 + level.frame % 2 : 0;
+      var top = TOP.slice();
+      if (level.blink > 0) { top[8] = '...TSSSSSSST....'; }
+      var rows = top.concat(LEGS[frame]);
+      var hop = level.hop >= 0 ? HOP[level.hop] : 0, bob = frame === 1 ? 1 : 0;
+      var y = level.ground - SPR_H - hop;
+      drawMap(top, level.x, y + bob, level.flip);
+      drawMap(LEGS[frame], level.x, y + TOP.length, level.flip);
+    }
+    function drawCopierMachine() {
+      var x = level.copierX, g = level.ground, T = C.T, W = C.W, G = C.G, D = C.D;
+      /* lid and glass */
+      rect(x + 2, g - 28, 26, 4, T); rect(x + 3, g - 27, 24, 2, G); rect(x + 12, g - 28, 6, 1, W);
+      /* body with a shaded right side */
+      rect(x, g - 24, 32, 24, T); rect(x + 1, g - 23, 30, 22, W); rect(x + 27, g - 23, 4, 22, G);
+      /* control panel */
+      rect(x + 3, g - 21, 18, 5, D); rect(x + 5, g - 20, 7, 3, C.B);
+      rect(x + 14, g - 20, 2, 1, level.light % 2 ? C.Y : D); rect(x + 17, g - 20, 2, 1, level.light % 3 === 0 ? C.K : D);
+      rect(x + 14, g - 18, 5, 1, G);
+      /* output slot on the side facing the room */
+      rect(x, g - 15, 3, 2, T);
+      /* paper drawers */
+      rect(x + 3, g - 13, 22, 1, T); rect(x + 3, g - 7, 22, 1, T);
+      rect(x + 11, g - 11, 6, 1, T); rect(x + 11, g - 5, 6, 1, T);
+      /* feet */
+      rect(x + 2, g - 1, 4, 1, T); rect(x + 26, g - 1, 4, 1, T);
+    }
+    function drawPile() {
+      var x = level.pileX, g = level.ground;
+      for (var i = 0; i < level.pile; i++) {
+        var nudge = (i * 7) % 3 - 1;
+        rect(x + nudge - 1, g - i * 2 - 2, 16, 2, C.T);
+        rect(x + nudge, g - i * 2 - 2, 14, 1, i % 3 ? C.W : C.G);
+      }
+    }
+    function drawFloor() {
+      /* a short stretch of floor: a pale top edge and two courses of brick */
+      var g = level.ground;
+      rect(0, g, level.w, level.h - g, C.T);
+      rect(0, g, level.w, 1, C.G);
+      rect(0, g + 2, level.w, 1, C.D);
+      for (var x = 0; x < level.w; x += 12) { rect(x, g + 1, 1, 1, C.D); rect(x + 6, g + 3, 1, 2, C.D); }
+    }
+    function drawLevel() {
+      sctx.clearRect(0, 0, level.w, level.h);
+      drawFloor();
+      drawPile();
+      drawCopierMachine();
+      level.sheets.forEach(function (s) { rect(Math.round(s.x) - 1, Math.round(s.y) - 1, 8, 3, C.T); rect(Math.round(s.x), Math.round(s.y), 6, 1, C.W); });
+      drawStudent();
+    }
+    function measureLevel() {
+      var w = stageEl.clientWidth, h = stageEl.clientHeight;
+      /* big, visible pixels: copier plus floor is 34 tall, and whole screen pixels keep every block square */
+      level.cell = Math.max(3, Math.floor(Math.min(h / 34, w / 92))); /* 92 wide leaves the student room to walk */
+      level.w = Math.ceil(w / level.cell);
+      level.h = Math.ceil(h / level.cell);
+      scv.width = level.w;
+      scv.height = level.h;
+      scv.style.width = level.w * level.cell + 'px';
+      scv.style.height = level.h * level.cell + 'px';
+      level.ground = level.h - 5;
+      level.offset = stageEl.getBoundingClientRect().left - hero.getBoundingClientRect().left;
+      level.min = 2;
+      level.copierX = level.w - 36;
+      level.pileX = level.copierX - 20;
+      level.max = level.pileX - SPR_W - 2;
+      if (!level.placed) { level.x = level.min + Math.round((level.max - level.min) * .5); level.placed = true; }
+      level.x = Math.max(level.min, Math.min(level.x, level.max));
+      drawLevel();
+    }
+    function copierPrint() {
+      level.sheets.push({ x: level.copierX - 2, y: level.ground - 15, vx: -1.1, vy: -1.8 });
+    }
+    function levelFrame(now) {
+      requestAnimationFrame(levelFrame);
+      if (now - level.last < 100) return;
+      level.last = now;
+      var hb = hero.getBoundingClientRect();
+      if (hb.bottom < 0 || hb.top > innerHeight) return;
+      level.light++;
+      if (level.target !== null) {
+        var goal = Math.max(level.min, Math.min(level.max, Math.round((level.target - level.offset) / level.cell - SPR_W / 2)));
+        var gap = goal - level.x;
+        level.walking = Math.abs(gap) > 1;
+        if (level.walking) { level.flip = gap < 0; level.x += gap > 0 ? 2 : -2; level.frame++; }
+      } else {
+        level.walking = false;
+      }
+      if (level.hop >= 0 && ++level.hop >= HOP.length) level.hop = -1;
+      if (level.blink > 0) level.blink--;
+      else if (Math.random() < .02) level.blink = 2;
+      level.sheets = level.sheets.filter(function (s) {
+        s.x += s.vx * 2;
+        s.y += s.vy * 2;
+        s.vy += .42;
+        if (s.y >= level.ground - level.pile * 2 - 1 && s.x <= level.pileX + 12) {
+          /* the pile tops out, then the student has presumably carried it away */
+          level.pile = level.pile >= 14 ? 3 : level.pile + 1;
+          return false;
+        }
+        return s.y < level.ground;
+      });
+      drawLevel();
+    }
+    stageEl.addEventListener('click', function () {
+      if (reduce) return;
+      level.hop = 0;
+      copierPrint();
+      intro = -3;
+      run();
+    });
+    addEventListener('resize', measureLevel);
+    measureLevel();
+    if (reduce) return;
+    requestAnimationFrame(levelFrame);
+    hero.appendChild(neg);
+
+    /* the 8-bit reveal: a solid core of pixels with a dithered rim, updated 15 times a second so it steps instead of glides */
+    var PIXEL = 8;
+    var head = { x: 0, y: 0, tx: 0, ty: 0, power: 0, inside: false, placed: false }, trail = [];
+    var revealOn = false, lastTick = 0, lastPath = '';
+    function revealFrame(now) {
+      if (now - lastTick >= 66) {
+        lastTick = now;
+        var w = neg.clientWidth, h = neg.clientHeight;
+        var cols = Math.ceil(w / PIXEL), rows = Math.ceil(h / PIXEL), map = new Float32Array(cols * rows);
+        var reach = Math.max(96, Math.min(240, w * .15));
+        function stamp(px, py, r, power) {
+          var x0 = Math.max(0, Math.floor((px - r) / PIXEL)), x1 = Math.min(cols - 1, Math.ceil((px + r) / PIXEL));
+          var y0 = Math.max(0, Math.floor((py - r) / PIXEL)), y1 = Math.min(rows - 1, Math.ceil((py + r) / PIXEL));
+          for (var cy = y0; cy <= y1; cy++) {
+            for (var cx = x0; cx <= x1; cx++) {
+              var d = Math.sqrt(Math.pow((cx + .5) * PIXEL - px, 2) + Math.pow((cy + .5) * PIXEL - py, 2)) / r;
+              var v = (d < .55 ? 1 : (1 - d) / .45) * power;
+              if (v > map[cy * cols + cx]) map[cy * cols + cx] = v;
+            }
+          }
+        }
+        head.x += (head.tx - head.x) * .5;
+        head.y += (head.ty - head.y) * .5;
+        head.power += ((head.inside ? 1 : 0) - head.power) * .4;
+        if (head.power < .02) head.power = 0;
+        var last = trail[trail.length - 1];
+        if (head.inside && (!last || Math.abs(last.x - head.x) + Math.abs(last.y - head.y) > 16)) {
+          trail.push({ x: head.x, y: head.y, life: 1 });
+        }
+        trail = trail.filter(function (p) {
+          p.life -= .06;
+          if (p.life <= 0) return false;
+          stamp(p.x, p.y, reach * (.45 + .55 * p.life), p.life);
+          return true;
+        });
+        if (head.power) stamp(head.x, head.y, reach, head.power);
+        /* the same ordered dither as the section edges, with each row merged into runs to keep the path short */
+        var d = '';
+        for (var ry = 0; ry < rows; ry++) {
+          var start = -1;
+          for (var rx = 0; rx <= cols; rx++) {
+            var on = rx < cols && map[ry * cols + rx] > (BAYER[ry % 8][rx % 8] + .5) / 64;
+            if (on && start < 0) start = rx;
+            if (!on && start >= 0) {
+              d += 'M' + start * PIXEL + ' ' + ry * PIXEL + 'h' + (rx - start) * PIXEL + 'v' + PIXEL + 'h' + (start - rx) * PIXEL + 'Z';
+              start = -1;
+            }
+          }
+        }
+        if (d !== lastPath) {
+          lastPath = d;
+          neg.style.visibility = d ? 'visible' : 'hidden';
+          if (d) neg.style.clipPath = 'path("' + d + '")';
+        }
+        if (!d && !head.inside) { revealOn = false; return; }
+      }
+      requestAnimationFrame(revealFrame);
+    }
+    hero.addEventListener('pointermove', function (e) {
+      var box = hero.getBoundingClientRect();
+      head.tx = e.clientX - box.left;
+      head.ty = e.clientY - box.top;
+      if (!head.placed) { head.x = head.tx; head.y = head.ty; head.placed = true; }
+      head.inside = true;
+      level.target = head.tx;
+      if (!revealOn) { revealOn = true; requestAnimationFrame(revealFrame); }
+    });
+    hero.addEventListener('pointerleave', function () { head.inside = false; head.placed = false; level.target = null; });
+
+    plate.addEventListener('pointerenter', measure);
+    plate.addEventListener('pointermove', function (e) {
+      var box = plate.getBoundingClientRect();
+      pointer = { x: e.clientX - box.left, y: e.clientY - box.top };
+      run();
+    });
+    function release() { pointer = null; }
+    plate.addEventListener('pointerleave', release);
+    plate.addEventListener('pointerup', function (e) { if (e.pointerType !== 'mouse') release(); });
+    plate.addEventListener('pointercancel', release);
+    addEventListener('resize', measure);
+    /* one wave through the headline on load, once the cuts have arrived, so it opens by showing what it does */
+    var loads = [];
+    if (document.fonts && document.fonts.load) {
+      CUTS.forEach(function (cut) {
+        loads.push(document.fonts.load('700 40px "' + cut + '"', 'Copy'));
+        loads.push(document.fonts.load('italic 40px "' + cut + '"', 'copy'));
+      });
+    }
+    Promise.race([
+      Promise.all(loads).catch(function () {}),
+      new Promise(function (res) { setTimeout(res, 2500); })
+    ]).then(function () {
+      measure();
+      measureLevel();
+      if (scrollY > 40) return;
+      setTimeout(function () { intro = -3; run(); }, 300);
+    });
+  })();
+
+  /* ---------- black sheet: redaction bars lift word by word, line by line, as the section scrolls in ---------- */
+  var words = [];
+  if (!reduce) {
+    [].forEach.call(document.querySelectorAll('[data-read]'), function (p) {
+      var parts = p.textContent.split(/(\s+)/);
+      p.textContent = '';
+      parts.forEach(function (w) {
+        if (/^\s*$/.test(w)) { p.appendChild(document.createTextNode(w)); return; }
+        var s = document.createElement('span');
+        s.textContent = w;
+        s.className = 'w g5';
+        p.appendChild(s);
+        words.push({ el: s, step: 5, cover: 1 });
+      });
+    });
+  }
+  function updateWords(vh) {
+    if (!words.length) return;
+    var area = $('idea').getBoundingClientRect();
+    if (area.bottom < -vh || area.top > vh * 2) return;
+    var box = words[0].el.parentNode.getBoundingClientRect();
+    var rects = words.map(function (w) { return w.el.getBoundingClientRect(); });
+    words.forEach(function (w, i) {
+      var r = rects[i], across = (r.left - box.left) / box.width;
+      /* each line clears from left to right, then the next line starts */
+      var t = (vh * .8 - r.top) / (r.height * 1.8) - across;
+      var cover = Math.round(Math.min(1, Math.max(0, 1 - t * 2.4)) * 100) / 100;
+      if (cover !== w.cover) { w.cover = cover; w.el.style.setProperty('--cover', cover); }
+      var step = Math.min(5, Math.max(0, Math.round(5 - (t - .4) * 5)));
+      if (step !== w.step) { w.step = step; setCut(w.el, step); }
+    });
+  }
+
+  /* ---------- last page: letters restore one by one ---------- */
+  var bring = $('bring'), letters = [];
+  (function () {
+    var text = bring.textContent;
+    bring.setAttribute('aria-label', text);
+    bring.textContent = '';
+    text.split(' ').forEach(function (word, wi, all) {
+      var wd = document.createElement('span');
+      wd.className = 'wd';
+      wd.setAttribute('aria-hidden', 'true');
+      word.split('').forEach(function (ch) {
+        var c = document.createElement('span');
+        c.textContent = ch;
+        c.className = reduce ? 'g0' : 'g6';
+        wd.appendChild(c);
+        letters.push({ el: c, seed: Math.random(), step: reduce ? 0 : 6 });
+      });
+      bring.appendChild(wd);
+      if (wi < all.length - 1) bring.appendChild(document.createTextNode(' '));
+    });
+  })();
+  function updateLetters(vh) {
+    if (reduce) return;
+    var rect = bring.getBoundingClientRect();
+    if (rect.top > vh || rect.bottom < 0) return;
+    var p = Math.min(1, Math.max(0, (vh - rect.top) / (vh * .72)));
+    letters.forEach(function (l) {
+      var local = Math.min(1, Math.max(0, (p - l.seed * .45) / .55));
+      var step = Math.round((1 - local) * 6);
+      if (step !== l.step) { l.step = step; setCut(l.el, step); }
+    });
+  }
+
+  /* ---------- Bayer-dither edges between paper stocks ---------- */
+  var CELL = 8, ROWS = 16;
+  var edges = [].map.call(document.querySelectorAll('.edge'), function (cv) {
+    return { cv: cv, ctx: cv.getContext('2d'), token: cv.dataset.from, q: -1, cols: 0 };
+  });
+  function sizeEdges() {
+    edges.forEach(function (ed) {
+      ed.cols = Math.ceil(ed.cv.clientWidth / CELL);
+      ed.cv.width = ed.cols;
+      ed.cv.height = ROWS;
+      ed.q = -1;
+    });
+  }
+  /* while the paper changes, the edge below the card turns to the new colour pixel by pixel */
+  var edgeBlend = null;
+  function drawEdge(ed, q) {
+    var ctx = ed.ctx, p = q / 40, gamma = .55 + p * 1.5;
+    ctx.clearRect(0, 0, ed.cols, ROWS);
+    var base = tokenColor(ed.token), blend = ed.token === '--stock' ? edgeBlend : null;
+    ctx.fillStyle = base;
+    for (var y = 0; y < ROWS; y++) {
+      var f = Math.pow(1 - (y + .5) / ROWS, gamma);
+      for (var x = 0; x < ed.cols; x++) {
+        var limit = (BAYER[y % 8][x % 8] + .5) / 64 + (grit(x, y) - .5) * .12;
+        if (y !== 0 && limit >= f) continue;
+        if (blend) ctx.fillStyle = grit(y, x) < blend.mix ? blend.color : base;
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+  function updateEdges(vh, force) {
+    edges.forEach(function (ed) {
+      var r = ed.cv.getBoundingClientRect();
+      if (!force && (r.bottom < 0 || r.top > vh)) return;
+      var q = reduce ? 20 : Math.round(Math.min(1, Math.max(0, 1 - r.top / vh)) * 40);
+      if (q !== ed.q || force) { ed.q = q; drawEdge(ed, q); }
+    });
+  }
+
+  /* ---------- nav ---------- */
+  var navLinks = [].slice.call($('nav').querySelectorAll('a'));
+  var navTargets = navLinks.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+  var navBarEl = $('navBar'), navActive = -1, navHover = -1;
+  function updateNav(vh, force) {
+    var cur = 0;
+    navTargets.forEach(function (t, i) { if (t.getBoundingClientRect().top <= vh * .4) cur = i; });
+    if (cur === navActive && !force) return;
+    navActive = cur;
+    navLinks.forEach(function (a, i) {
+      if (i === cur) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current');
+    });
+    moveNavBar();
+  }
+
+  /* the redaction bar: its leading edge moves first so it stretches and catches up, and it wears any letter it crosses */
+  var navBar = { l: 0, r: 0, tl: 0, tr: 0, placed: false, running: false, lastTick: 0 };
+  var navLetters = [];
+  $('nav').classList.add('live');
+  navLinks.forEach(function (a, i) {
+    a.setAttribute('aria-label', a.textContent);
+    splitLetters(a).forEach(function (el) {
+      el.setAttribute('aria-hidden', 'true');
+      navLetters.push({ el: el, link: i, cut: 0, hold: 0, cx: 0 });
+    });
+  });
+  function measureNav() {
+    var box = $('nav').getBoundingClientRect();
+    navLetters.forEach(function (l) {
+      var r = l.el.getBoundingClientRect();
+      l.cx = r.left - box.left + r.width / 2;
+    });
+  }
+  function paintNavBar() {
+    navBarEl.style.transform = 'translateX(' + navBar.l + 'px) scaleX(' + Math.max(1, navBar.r - navBar.l) + ')';
+  }
+  function moveNavBar() {
+    var a = navLinks[navHover >= 0 ? navHover : Math.max(0, navActive)];
+    /* exact fractional edges, so no sliver of paper shows beside the bar */
+    var box = $('nav').getBoundingClientRect(), edge = a.getBoundingClientRect();
+    navBar.tl = edge.left - box.left;
+    navBar.tr = edge.right - box.left;
+    if (reduce || !navBar.placed) {
+      navBar.l = navBar.tl;
+      navBar.r = navBar.tr;
+      navBar.placed = true;
+      paintNavBar();
+      return;
+    }
+    if (!navBar.running) { navBar.running = true; requestAnimationFrame(navFrame); }
+  }
+  function navFrame(now) {
+    var right = navBar.tr > navBar.r || navBar.tl > navBar.l;
+    var dl = (navBar.tl - navBar.l) * (right ? .14 : .3);
+    var dr = (navBar.tr - navBar.r) * (right ? .3 : .14);
+    navBar.l += dl;
+    navBar.r += dr;
+    paintNavBar();
+    var speed = Math.max(Math.abs(dl), Math.abs(dr)), settled = speed < .1;
+    /* wear lands the moment the bar touches a letter, then heals one cut per tick behind it */
+    var tick = now - navBar.lastTick >= 45;
+    if (tick) navBar.lastTick = now;
+    navLetters.forEach(function (l) {
+      if (speed > 1 && l.cx > navBar.l - 8 && l.cx < navBar.r + 8) {
+        var wear = Math.min(6, Math.round(speed * .6));
+        if (wear > l.cut) { l.cut = wear; setCut(l.el, wear); }
+      } else if (tick) {
+        if (l.hold > 0) l.hold--;
+        else if (l.cut) { l.cut--; setCut(l.el, l.cut); }
+      }
+      if (l.cut || l.hold) settled = false;
+    });
+    if (settled) {
+      navBar.l = navBar.tl;
+      navBar.r = navBar.tr;
+      paintNavBar();
+      navBar.running = false;
+      return;
+    }
+    requestAnimationFrame(navFrame);
+  }
+  navLinks.forEach(function (a, i) {
+    function enter() {
+      navHover = i;
+      if (!reduce) {
+        /* the label you land on reprints from left to right */
+        measureNav();
+        var j = 0;
+        navLetters.forEach(function (l) {
+          if (l.link !== i) return;
+          l.cut = 5;
+          l.hold = j++;
+          setCut(l.el, 5);
+        });
+      }
+      moveNavBar();
+    }
+    function leave() {
+      if (navHover === i) navHover = -1;
+      moveNavBar();
+    }
+    a.addEventListener('mouseenter', enter);
+    a.addEventListener('mouseleave', leave);
+    a.addEventListener('focus', enter);
+    a.addEventListener('blur', leave);
+  });
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () { navBar.placed = false; measureNav(); moveNavBar(); });
+  }
+  /* ---------- journey: the steps slide in from the right, then a black hole opens at the centre ---------- */
+  var journeyMq = matchMedia('(min-width: 761px) and (min-height: 560px)');
+  var zone = $('zone'), track = $('track'), stuckEl = $('generations'), panel = $('stepsPanel'), panelInner = $('stepsInner');
+  var stepsRow = $('stepsRow'), lostPanel = $('lostPanel');
+  var stepTitles = [].map.call(stepsRow.querySelectorAll('h3'), function (el) { return { el: el, cut: 0 }; });
+  var lostTitle = $('lostTitle');
+  lostTitle.setAttribute('aria-label', lostTitle.textContent);
+  var lostLetters = splitLetters(lostTitle).map(function (el) {
+    el.setAttribute('aria-hidden', 'true');
+    return { el: el, cut: 0, seed: Math.random() };
+  });
+  var journeyOn = false, journeyP = -1, navStatic = navTargets.slice();
+  function journeyAnchor(share) {
+    var a = document.createElement('span');
+    a.style.cssText = 'position:absolute;left:0;top:calc((520vh - 100vh) * ' + share + ')';
+    return a;
+  }
+  var stepsAnchor = journeyAnchor(.2), lostAnchor = journeyAnchor(1);
+  var stuckAnchor = document.createElement('span');
+  zone.insertBefore(stuckAnchor, stuckEl);
+  /* each pixel of the blue edge drifts on its own timing, with a wave rolling along it; 	ime comes from the scroll position */
+  function drawEdgeV(time) {
+    var cv = $('edgeV'), rows = Math.ceil(cv.clientHeight / CELL), cols = ROWS, ctx = cv.getContext('2d');
+    cv.width = cols;
+    cv.height = rows;
+    ctx.fillStyle = tokenColor('--sky');
+    for (var x = 0; x < cols; x++) {
+      /* solid against the panel on the right, fading out to the left */
+      var f = (x + .5) / cols;
+      for (var y = 0; y < rows; y++) {
+        var limit = (BAYER[x % 8][y % 8] + .5) / 64 + (grit(y, x) - .5) * .12;
+        limit += (Math.sin(time * 9 + grit(x, y) * 6.283) - .7 * Math.sin(y * .09 + time * 5)) * .14;
+        if (x === cols - 1 || limit < f) ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+  /* the man in the empty part of the blue sheet: every step he takes comes from the scroll position, so he stops when you stop and turns round when you scroll back */
+  var WALK_COLOR = { T: '#121311', W: '#fbfbf7', G: '#9a9c95', S: '#f0b183', K: '#ff6ba9', D: '#3a3b37' };
+  var WALK_HEAD = [
+    '...TTTTTTTTTT...',
+    '...TWWWWWWWWT...',
+    '...TGGGGGGGGT...',
+    '...TWWWWWWWWT...',
+    '...TTTTTTTTTT...',
+    '....TTTTTTT.....',
+    '...TTTTTTTTT....',
+    '...TTSSSSSTT....',
+    '...TSSSSTSST....',
+    '...TSSSSTSSS....',
+    '...TSSSSSSST....',
+    '....TSSSTTT.....',
+    '.....TSSSST.....',
+    '....TTTTTT......'
+  ];
+  var WALK_POSES = {
+    forward: ['...TKKKKKKT.....', '..TKKKKKKKTT....', '..TKKKKKKTKKT...', '..TKKKKKKTTSST..', '...TKKKKKKT.TT..', '...TDDDDDDT.....'],
+    back: ['...TKKKKKKT.....', '..TTKKKKKKKT....', '.TKKTKKKKKKT....', 'TSSTTKKKKKKT....', '.TT.TKKKKKKT....', '...TDDDDDDT.....'],
+    down: ['...TKKKKKKT.....', '..TKKKKKKKKT....', '..TKKKTKKKKT....', '..TKKKTKKKKT....', '...TSSTKKKT.....', '...TDDDDDDT.....']
+  };
+  var WALK_LEGS = {
+    stride: ['...TDDDTDDDT....', '..TDDT..TDDT....', '.TDDT....TDDT...', '.TTTT....TTTTT..'],
+    pass: ['...TDDDDDDT.....', '....TDDDDT......', '....TDDDT.......', '....TTTTTT......'],
+    stand: ['...TDDTTDDT.....', '...TDDTTDDT.....', '...TDDTTDDT.....', '...TTTTTTTTT....']
+  };
+  var WALK_CYCLE = [['forward', 'stride'], ['down', 'pass'], ['back', 'stride'], ['down', 'pass']];
+  var WALK_W = 16, WALK_H = WALK_HEAD.length + 10, WALK_FLOOR = 2;
+  var walker = { cv: $('walker'), cell: 4, cols: 0, rows: 0, travel: 0, flip: false, key: '' };
+  walker.ctx = walker.cv.getContext('2d');
+  function measureWalker() {
+    /* the ol fills the free height and its steps sit at the bottom, so the space above the tallest step is his */
+    var tallest = 0;
+    [].forEach.call(stepsRow.children, function (li) { tallest = Math.max(tallest, li.offsetHeight); });
+    var free = stepsRow.clientHeight - tallest - 16;
+    var cell = Math.max(2, Math.min(14, Math.floor(free * .62 / (WALK_H + WALK_FLOOR))));
+    walker.cell = cell;
+    walker.cols = Math.ceil(innerWidth / cell);
+    walker.rows = Math.max(WALK_H + WALK_FLOOR + 1, Math.floor(free / cell));
+    walker.key = '';
+    walker.cv.width = walker.cols;
+    walker.cv.height = walker.rows;
+    walker.cv.style.width = walker.cols * cell + 'px';
+    walker.cv.style.height = walker.rows * cell + 'px';
+    walker.cv.style.top = stepsRow.offsetTop + free - walker.rows * cell + 'px';
+  }
+  function drawWalker(travel, shift) {
+    var w = walker, ctx = w.ctx, ground = w.rows - WALK_FLOOR;
+    if (travel !== w.travel) w.flip = travel < w.travel;
+    w.travel = travel;
+    if (travel === 0) w.flip = false;
+    var margin = Math.round(innerWidth * .04 / w.cell);
+    var x = Math.round(margin + travel * (w.cols - WALK_W - margin * 2));
+    /* one pose every three pixels of ground covered, counting the floor moving under him, so his feet never slide */
+    var walked = (x * w.cell + shift) / (w.cell * 3), n = ((Math.floor(walked) % 4) + 4) % 4;
+    var moving = travel > 0 && travel < 1;
+    var pose = moving ? WALK_CYCLE[n] : ['down', 'stand'], bob = moving && n % 2 ? 1 : 0;
+    var offset = Math.round(shift / w.cell);
+    var key = [x, pose[0], pose[1], w.flip, offset].join();
+    if (key === w.key) return;
+    w.key = key;
+    ctx.clearRect(0, 0, w.cols, w.rows);
+    ctx.fillStyle = WALK_COLOR.T;
+    ctx.fillRect(0, ground, w.cols, 1);
+    /* marks on the floor travel with the steps below */
+    for (var m = -(offset % 16) - 16; m < w.cols; m += 16) { ctx.fillRect(m, ground + 1, 4, 1); ctx.fillRect(m + 8, ground + 1, 1, 1); }
+    function paint(rows, top) {
+      rows.forEach(function (row, ry) {
+        for (var rx = 0; rx < row.length; rx++) {
+          var c = WALK_COLOR[row[rx]];
+          if (!c) continue;
+          ctx.fillStyle = c;
+          ctx.fillRect(w.flip ? x + row.length - 1 - rx : x + rx, top + ry, 1, 1);
+        }
+      });
+    }
+    var top = ground - WALK_H;
+    paint(WALK_HEAD.concat(WALK_POSES[pose[0]]), top - bob);
+    /* when he rises on a passing step, the waist stretches so the body and legs stay joined */
+    if (bob) paint([WALK_POSES[pose[0]][5]], top + WALK_HEAD.length + 5);
+    paint(WALK_LEGS[pose[1]], top + WALK_HEAD.length + 6);
+  }
+  function measureJourney() {
+    if (!journeyOn) return;
+    /* positions are in pixels, so a new window size has to redraw them even at the same progress */
+    journeyP = -1;
+    stuckEl.style.setProperty('--zone-stick', Math.min(0, innerHeight - stuckEl.offsetHeight) + 'px');
+    drawEdgeV(0);
+    measureWalker();
+  }
+  function setupJourney() {
+    journeyOn = !reduce && journeyMq.matches;
+    document.documentElement.classList.toggle('journey-on', journeyOn);
+    var stepsI = navLinks.findIndex(function (a) { return a.getAttribute('href') === '#steps'; });
+    var lostI = navLinks.findIndex(function (a) { return a.getAttribute('href') === '#lost'; });
+    /* the pinned section reports its stuck position, so the nav aims for a marker that stays where it begins */
+    var stuckI = navLinks.findIndex(function (a) { return a.getAttribute('href') === '#generations'; });
+    navTargets[stuckI] = journeyOn ? stuckAnchor : navStatic[stuckI];
+    if (journeyOn) {
+      track.appendChild(stepsAnchor);
+      track.appendChild(lostAnchor);
+      navTargets[stepsI] = stepsAnchor;
+      navTargets[lostI] = lostAnchor;
+      measureJourney();
+      return;
+    }
+    navTargets[stepsI] = navStatic[stepsI];
+    navTargets[lostI] = navStatic[lostI];
+    holeStep = -1;
+    [stuckEl, panel, panelInner, stepsRow, lostPanel].forEach(function (el) { el.style.transform = ''; el.style.clipPath = ''; el.style.visibility = ''; });
+    stepTitles.forEach(function (t) { t.cut = 0; setCut(t.el, 0); });
+    lostLetters.forEach(function (l) { l.cut = 0; setCut(l.el, 0); });
+  }
+  function smooth(t) { return t * t * (3 - 2 * t); }
+  /* the black hole in 8-bit: square pixels, a solid core and a dithered rim, redrawn only when it grows a step */
+  var HOLE_PIXEL = 16, HOLE_RIM = 176, holeStep = -1;
+  function drawHole(hole, w, h) {
+    var reach = Math.sqrt(w * w + h * h) / 2 + HOLE_RIM;
+    var r = Math.pow(hole, 2.2) * reach, step = Math.round(r / 8);
+    if (step === holeStep) return;
+    holeStep = step;
+    lostPanel.style.visibility = step > 0 ? 'visible' : 'hidden';
+    if (hole >= 1) { lostPanel.style.clipPath = 'none'; return; }
+    var rim = Math.min(HOLE_RIM, Math.max(HOLE_PIXEL, r * .6));
+    /* the grid is centred on the screen, so the shape stays symmetrical as it grows */
+    var cols = Math.ceil(w / HOLE_PIXEL / 2) + 1, rows = Math.ceil(h / HOLE_PIXEL / 2) + 1, cx = w / 2, cy = h / 2, d = '';
+    for (var y = -rows; y < rows; y++) {
+      var start = null;
+      for (var x = -cols; x <= cols; x++) {
+        var dist = Math.sqrt(Math.pow((x + .5) * HOLE_PIXEL, 2) + Math.pow((y + .5) * HOLE_PIXEL, 2));
+        var on = x < cols && (r - dist) / rim > (BAYER[(y % 8 + 8) % 8][(x % 8 + 8) % 8] + .5) / 64;
+        if (on && start === null) start = x;
+        if (!on && start !== null) {
+          d += 'M' + (cx + start * HOLE_PIXEL) + ' ' + (cy + y * HOLE_PIXEL) + 'h' + (x - start) * HOLE_PIXEL + 'v' + HOLE_PIXEL + 'h' + (start - x) * HOLE_PIXEL + 'Z';
+          start = null;
+        }
+      }
+    }
+    lostPanel.style.clipPath = 'path("' + d + '")';
+  }
+  function updateJourney(vh) {
+    if (!journeyOn) return;
+    var r = track.getBoundingClientRect(), w = innerWidth;
+    var p = Math.min(1, Math.max(0, -r.top / (r.height - vh)));
+    /* compare progress instead of checking if it is on screen, so a long jump never leaves it in a stale state */
+    if (p === journeyP) return;
+    journeyP = p;
+    /* 1: the panel slides over the yellow stack from the right, nudging it left */
+    var slide = smooth(Math.min(1, p / .2));
+    panel.style.transform = 'translateX(' + (1 - slide) * (w + 128) + 'px)';
+    /* the edge's pixels are driven by the scroll itself: they move as you scroll, reverse with it, and rest when you stop */
+    if (slide > .001 && slide < 1) drawEdgeV(-r.top / 60);
+    stuckEl.style.transform = slide ? 'translateX(' + (-slide * w * .08) + 'px)' : '';
+    /* 2: the steps keep travelling right to left */
+    var travel = Math.min(1, Math.max(0, (p - .22) / .5));
+    var shift = travel * Math.max(0, stepsRow.scrollWidth - w);
+    stepsRow.style.transform = 'translateX(' + (-shift) + 'px)';
+    drawWalker(travel, shift);
+    /* 3: the black hole opens at the centre, pulling the page in as it grows */
+    var hole = Math.min(1, Math.max(0, (p - .76) / .24));
+    panelInner.style.transform = hole ? 'scale(' + (1 - .62 * smooth(hole)) + ') rotate(' + (hole * hole * 42) + 'deg)' : '';
+    drawHole(hole, w, vh);
+    /* type sharpens as it reaches the middle of the screen, and breaks down as the hole takes it */
+    stepTitles.forEach(function (t) {
+      var b = t.el.getBoundingClientRect();
+      var away = Math.abs(b.left + b.width / 2 - w / 2) / (w * .5);
+      var cut = Math.min(6, Math.round(Math.min(1, away) * 3 + hole * 8));
+      if (cut !== t.cut) { t.cut = cut; setCut(t.el, cut); }
+    });
+    /* the new headline rebuilds itself out of the black */
+    lostLetters.forEach(function (l) {
+      var local = Math.min(1, Math.max(0, ((hole - .5) / .5 - l.seed * .4) / .6));
+      var cut = Math.round((1 - local) * 6);
+      if (cut !== l.cut) { l.cut = cut; setCut(l.el, cut); }
+    });
+  }
+  setupJourney();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { measureJourney(); schedule(); });
+  journeyMq.addEventListener('change', function () { setupJourney(); schedule(); });
+  if (window.ResizeObserver) new ResizeObserver(function () { measureJourney(); schedule(); }).observe(stuckEl);
+
+  /* ---------- smooth, weighted scrolling on wheel and trackpad; touch keeps its native feel ---------- */
+  if (!reduce && window.Lenis) {
+    var lenis = new Lenis({ lerp: .1, wheelMultiplier: 1 });
+    requestAnimationFrame(function raf(time) { lenis.raf(time); requestAnimationFrame(raf); });
+    navLinks.forEach(function (a, i) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        lenis.scrollTo(navTargets[i], { duration: 1.4 });
+      });
+    });
+  }
+
+  /* ---------- scroll loop ---------- */
+  var queued = false;
+  function frame() {
+    queued = false;
+    var vh = innerHeight;
+    updateWords(vh);
+    updateDeck(vh);
+    updateJourney(vh);
+    updateLetters(vh);
+    updateEdges(vh);
+    updateNav(vh);
+  }
+  function schedule() { if (!queued) { queued = true; requestAnimationFrame(frame); } }
+  addEventListener('scroll', schedule, { passive: true });
+  addEventListener('resize', function () {
+    sizeEdges();
+    updateEdges(innerHeight, true);
+    navBar.placed = false;
+    measureNav();
+    measureJourney();
+    updateNav(innerHeight, true);
+    schedule();
+  });
+
+  /* ---------- rate rows: the name reprints left to right when you point at it ---------- */
+  var rateRows = [].slice.call(document.querySelectorAll('.rate'));
+  rateRows.forEach(function (row) {
+    var name = row.querySelector('.rate-name'), text = name.textContent;
+    var letters = [], timer = 0;
+    name.textContent = '';
+    var sr = document.createElement('span');
+    sr.className = 'sr-only';
+    sr.textContent = text;
+    name.appendChild(sr);
+    text.split('').forEach(function (ch) {
+      if (ch === ' ') { name.appendChild(document.createTextNode(' ')); return; }
+      var s = document.createElement('span');
+      s.textContent = ch;
+      s.className = 'g3';
+      s.setAttribute('aria-hidden', 'true');
+      name.appendChild(s);
+      letters.push(s);
+    });
+    function setAll(g) { letters.forEach(function (s) { setCut(s, g); }); }
+    row.addEventListener('pointerenter', function () {
+      clearInterval(timer);
+      if (reduce) { setAll(0); return; }
+      var tick = 0;
+      timer = setInterval(function () {
+        tick++;
+        var done = true;
+        letters.forEach(function (s, i) {
+          var g = Math.max(0, Math.round(6 - Math.max(0, tick - i * .7)));
+          setCut(s, g);
+          if (g) done = false;
+        });
+        if (done) clearInterval(timer);
+      }, 35);
+    });
+    row.addEventListener('pointerleave', function () {
+      clearInterval(timer);
+      setAll(3);
+    });
+  });
+
+  /* ---------- rate samples: the printed thing follows the pointer and reprints between rows ---------- */
+  (function () {
+    if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+    var list = $('rateList'), spec = $('spec'), tilt = $('specTilt');
+    var samples = [].slice.call(spec.querySelectorAll('.sp'));
+    var W = 240, H = 340;
+    var s = { x: 0, y: 0, tx: 0, ty: 0, rot: 0, running: false, active: -1, z: 1, placed: false };
+    function targetFrom(e) {
+      /* stay in the gap between the specs and the prices, leaning toward the pointer */
+      var box = list.getBoundingClientRect();
+      var anchor = box.left + box.width * .74;
+      s.tx = Math.min(innerWidth - W - 16, Math.max(16, anchor + (e.clientX - anchor) * .06));
+      s.ty = Math.min(innerHeight - H - 16, Math.max(16, e.clientY - H / 2));
+      if (!s.placed) { s.x = s.tx; s.y = s.ty; s.placed = true; }
+    }
+    function loop() {
+      var k = reduce ? 1 : .16, dy = s.ty - s.y;
+      s.x += (s.tx - s.x) * k;
+      s.y += dy * k;
+      /* the sheet swings against its direction of travel */
+      var goal = reduce ? 0 : Math.max(-12, Math.min(12, dy * -.12)) - 3;
+      s.rot += (goal - s.rot) * .14;
+      spec.style.transform = 'translate3d(' + s.x + 'px,' + s.y + 'px,0)';
+      tilt.style.transform = 'rotate(' + s.rot + 'deg)';
+      var still = Math.abs(dy) < .2 && Math.abs(s.tx - s.x) < .2 && Math.abs(goal - s.rot) < .05;
+      if (still && spec.classList.contains('on')) { s.running = false; return; }
+      if (!spec.classList.contains('on') && still) { s.running = false; return; }
+      requestAnimationFrame(loop);
+    }
+    function run() { if (!s.running) { s.running = true; requestAnimationFrame(loop); } }
+    function activate(i) {
+      if (i === s.active) return;
+      var prev = samples[s.active], next = samples[i];
+      s.active = i;
+      s.z++;
+      next.style.zIndex = s.z;
+      next.classList.add('show');
+      samples.forEach(function (el) { if (el !== prev && el !== next) el.classList.remove('show'); });
+      if (reduce || !prev) {
+        if (prev) prev.classList.remove('show');
+        return;
+      }
+      var a = next.animate([
+        { opacity: 0, transform: 'translateY(8px)' },
+        { opacity: 1, transform: 'translateY(0)' }
+      ], { duration: 240, easing: 'cubic-bezier(.22,1,.36,1)' });
+      a.onfinish = function () {
+        if (samples[s.active] === next) {
+          samples.forEach(function (el) { if (el !== next) el.classList.remove('show'); });
+        }
+      };
+    }
+    list.addEventListener('pointermove', function (e) { targetFrom(e); run(); });
+    rateRows.forEach(function (row, i) {
+      row.addEventListener('pointerenter', function (e) {
+        targetFrom(e);
+        spec.style.visibility = 'visible';
+        spec.classList.add('on');
+        activate(i);
+        run();
+      });
+    });
+    list.addEventListener('pointerleave', function () {
+      spec.classList.remove('on');
+      s.placed = false;
+      setTimeout(function () {
+        if (!spec.classList.contains('on')) {
+          spec.style.visibility = 'hidden';
+          samples.forEach(function (el) { el.classList.remove('show'); });
+          s.active = -1;
+        }
+      }, 300);
+    });
+  })();
+
+  /* ---------- paper stock: the new colour eases down the card behind a dithered edge ---------- */
+  var wipe = $('wipe'), stockBand = $('stockBand'), stockRun = 0;
+  /* the band's pixels keep moving as it travels: each drifts on its own timing, with a wave rolling along the edge */
+  function drawStockBand(color, time) {
+    var cols = Math.ceil(wipe.clientWidth / CELL), ctx = stockBand.getContext('2d');
+    stockBand.width = cols;
+    stockBand.height = ROWS;
+    ctx.fillStyle = color;
+    for (var y = 0; y < ROWS; y++) {
+      var f = 1 - (y + .5) / ROWS;
+      for (var x = 0; x < cols; x++) {
+        var limit = (BAYER[y % 8][x % 8] + .5) / 64 + (grit(x, y) - .5) * .12;
+        limit += (Math.sin(time * 9 + grit(y, x) * 6.283) - .7 * Math.sin(x * .09 + time * 5)) * .14;
+        if (y === 0 || limit < f) ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+  function commitStock(color) {
+    document.documentElement.style.setProperty('--stock', color);
+    edgeBlend = null;
+    wipe.style.visibility = 'hidden';
+    wipe.style.clipPath = '';
+    stockBand.style.visibility = 'hidden';
+    updateEdges(innerHeight, true);
+  }
+  document.querySelectorAll('input[name="stock"]').forEach(function (input) {
+    input.addEventListener('change', function () {
+      var color = input.value, run = ++stockRun;
+      if (edgeBlend) { edgeBlend = null; updateEdges(innerHeight, true); }
+      if (reduce) { commitStock(color); return; }
+      wipe.style.background = color;
+      wipe.style.visibility = 'visible';
+      wipe.style.clipPath = 'inset(0 0 100% 0)';
+      drawStockBand(color, 0);
+      stockBand.style.visibility = 'visible';
+      var start = performance.now(), DURATION = 1100, lastPixels = start;
+      /* one timer moves the colour and its dithered edge together, so they can never drift apart */
+      requestAnimationFrame(function step(now) {
+        if (run !== stockRun) return;
+        var t = Math.min(1, Math.max(0, (now - start) / DURATION));
+        /* eases in but keeps its speed at the end, so no strip of the old colour lingers above the edge */
+        var pos = t * t * (1.6 - .6 * t), h = wipe.clientHeight;
+        wipe.style.clipPath = 'inset(0 0 ' + ((1 - pos) * 100) + '% 0)';
+        /* 12 frames a second keeps the movement in pixel-art rhythm */
+        if (now - lastPixels >= 83) { lastPixels = now; drawStockBand(color, (now - start) / 1000); }
+        stockBand.style.transform = 'translateY(' + (pos * h - 2) + 'px)';
+        /* as the band reaches the bottom of the card, the edge below turns over pixel by pixel */
+        var mix = (pos - .85) / .15;
+        if (mix > 0) {
+          edgeBlend = { color: color, mix: Math.min(1, mix) };
+          edges.forEach(function (ed) { if (ed.token === '--stock') drawEdge(ed, ed.q); });
+        }
+        if (t < 1) { requestAnimationFrame(step); return; }
+        commitStock(color);
+      });
+    });
+  });
+  sizeEdges();
+  updateEdges(innerHeight, true);
+  updateNav(innerHeight, true);
+  frame();
+})();
+</script>
+</body>
+</html>
