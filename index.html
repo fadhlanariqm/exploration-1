@@ -157,7 +157,7 @@ a { color: inherit; }
   justify-items: center;
   max-width: 46rem;
 }
-/* The negative: the same page in toner, shown only through the dithered pixels behind the pointer */
+/* The other hour: the same page at the opposite time of day, shown only through the dithered pixels behind the pointer */
 .hero.hero-neg {
   position: absolute;
   inset: 0 0 -128px; /* reaches over the 128px edge of the next section */
@@ -1017,7 +1017,7 @@ a { color: inherit; }
     </h1>
 
     <div class="hero-side">
-      <p class="hero-lede">Lecture notes the night before the exam. Flyers for the band's next show. A thesis that has to be bound by tomorrow. We copy it in black and white or colour, print it on the risograph, then fold, staple or bind it. <span class="pointer-hint">Move across the page to see its negative.</span></p>
+      <p class="hero-lede">Lecture notes the night before the exam. Flyers for the band's next show. A thesis that has to be bound by tomorrow. We copy it in black and white or colour, print it on the risograph, then fold, staple or bind it. <span class="pointer-hint">Move across the page to change the hour.</span></p>
       <p class="hero-note label">Walk-ins only. Open until 2am in exam week. Bring a USB stick or the actual paper.</p>
     </div>
 
@@ -1794,12 +1794,22 @@ a { color: inherit; }
 
   /* ---------- the hero's time of day: follows the visitor's clock until they pick one ---------- */
   (function () {
-    var hero = $('copier'), cv = $('sky'), ctx = cv.getContext('2d'), SKY_CELL = 8;
+    var hero = $('copier'), cv = $('sky'), skyCtx = cv.getContext('2d'), ctx = skyCtx, SKY_CELL = 8;
+    /* what the pointer's circle opens onto: morning and late afternoon swap, and so do noon and night */
+    var OPPOSITE = { morning: 'dusk', dusk: 'morning', noon: 'night', night: 'noon' };
+    var negSheet = document.querySelector('.hero-neg'), negCv = null, negCtx = null, negImage = null;
+    if (negSheet) {
+      negCv = document.createElement('canvas');
+      negCv.className = 'sky';
+      negCv.setAttribute('aria-hidden', 'true');
+      negSheet.insertBefore(negCv, negSheet.firstChild);
+      negCtx = negCv.getContext('2d');
+    }
     var TIMES = {
-      morning: { bands: ['#7fc4ee', '#b9def0', '#f4e2cc', '#fbcfa6'], ink: '#121311', negBg: '#121311', negInk: '#f2f3ef', note: 'Longest queue at 7:40am on deadline day' },
-      noon: { bands: ['#56aee8', '#8ccbf0', '#bfe3f5', '#e9f5f6'], ink: '#121311', negBg: '#121311', negInk: '#f2f3ef', note: 'Bring a thesis before noon to have it bound the same day' },
-      dusk: { bands: ['#ff6ba9', '#ff8a7d', '#ffae5a', '#f5b800'], ink: '#121311', negBg: '#121311', negInk: '#f2f3ef', note: 'Open until 10pm in term time' },
-      night: { bands: ['#0d1024', '#1a2148', '#3a4a7c', '#4a5a90'], ink: '#f2f3ef', negBg: '#f2f3ef', negInk: '#121311', note: 'Open until 2am in exam week' }
+      morning: { bands: ['#7fc4ee', '#b9def0', '#f4e2cc', '#fbcfa6'], ink: '#121311', note: 'Longest queue at 7:40am on deadline day' },
+      noon: { bands: ['#56aee8', '#8ccbf0', '#bfe3f5', '#e9f5f6'], ink: '#121311', note: 'Bring a thesis before noon to have it bound the same day' },
+      dusk: { bands: ['#ff6ba9', '#ff8a7d', '#ffae5a', '#f5b800'], ink: '#121311', note: 'Open until 10pm in term time' },
+      night: { bands: ['#0d1024', '#1a2148', '#3a4a7c', '#4a5a90'], ink: '#f2f3ef', note: 'Open until 2am in exam week' }
     };
     /* the small pictures on the buttons */
     var ICONS = {
@@ -1844,7 +1854,14 @@ a { color: inherit; }
       cv.height = rows;
       cv.style.width = cols * SKY_CELL + 'px';
       cv.style.height = rows * SKY_CELL + 'px';
-      image = ctx.createImageData(cols, rows);
+      image = skyCtx.createImageData(cols, rows);
+      if (negCv) {
+        negCv.width = cols;
+        negCv.height = rows;
+        negCv.style.width = cols * SKY_CELL + 'px';
+        negCv.style.height = rows * SKY_CELL + 'px';
+        negImage = negCtx.createImageData(cols, rows);
+      }
       bases = {};
       Object.keys(TIMES).forEach(function (n) { bases[n] = buildBase(n); });
       draw();
@@ -1932,26 +1949,33 @@ a { color: inherit; }
         if (fall < 10) for (var k = 0; k < 6; k++) box(cols * .2 + fall * 3 - k, rows * .08 + fall - k * .5, 1, 1, k ? '#7f8ab8' : '#ffffff');
       }
     }
-    function draw() {
-      if (!cols || !now) return;
-      var to = bases[now], old = from && fade < 1 ? bases[from] : null, px = image.data, view = new Uint32Array(px.buffer);
+    function paint(target, img, name, leaving) {
+      ctx = target;
+      var to = bases[name], old = leaving ? bases[leaving] : null, view = new Uint32Array(img.data.buffer);
       for (var y = 0, i = 0; y < rows; y++) for (var x = 0; x < cols; x++, i++) {
         /* a change of time dissolves through the same ordered dither as everything else */
         view[i] = old && fade <= (BAYER[y % 8][x % 8] + .5) / 64 ? old[i] : to[i];
       }
-      ctx.putImageData(image, 0, 0);
+      ctx.putImageData(img, 0, 0);
       var eased = fade * fade * (3 - 2 * fade);
-      if (old) body(from, 1 - eased);
-      body(now, eased);
-      scenery(old && fade < .5 ? from : now);
+      if (old) body(leaving, 1 - eased);
+      body(name, eased);
+      scenery(old && fade < .5 ? leaving : name);
+    }
+    function draw() {
+      if (!cols || !now) return;
+      var leaving = from && fade < 1 ? from : null;
+      paint(skyCtx, image, now, leaving);
+      if (negCtx) paint(negCtx, negImage, OPPOSITE[now], leaving ? OPPOSITE[leaving] : null);
     }
     function dress(name) {
       var set = TIMES[name], root = document.documentElement.style;
       heroTime = name;
       root.setProperty('--hero-foot', set.bands[3]);
       root.setProperty('--hero-ink', set.ink);
-      root.setProperty('--neg-bg', set.negBg);
-      root.setProperty('--neg-ink', set.negInk);
+      /* the reveal wears the opposite hour's colours */
+      root.setProperty('--neg-bg', TIMES[OPPOSITE[name]].bands[3]);
+      root.setProperty('--neg-ink', TIMES[OPPOSITE[name]].ink);
       redrawLevel();
       updateEdges(innerHeight, true);
     }
