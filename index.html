@@ -17,6 +17,7 @@
   --goldenrod: #f5b800;
   --sky: #8ccbf0;
   --stock: #ff6ba9;
+  --kraft: #c8a273;
   --ash: #a9aba4;
   --display: "Redaction", "Times New Roman", Times, serif;
   --sans: "Archivo", "Helvetica Neue", Arial, sans-serif;
@@ -52,6 +53,14 @@ a { color: inherit; }
 .g4 { font-family: "Redaction 50", "Times New Roman", Times, serif; }
 .g5 { font-family: "Redaction 70", "Times New Roman", Times, serif; }
 .g6 { font-family: "Redaction 100", "Times New Roman", Times, serif; }
+
+/* Headlines under the pointer: a cut laid over whatever the scroll has set, so it goes back to that when it heals */
+[data-h="1"] { font-family: "Redaction 10", "Times New Roman", Times, serif !important; }
+[data-h="2"] { font-family: "Redaction 20", "Times New Roman", Times, serif !important; }
+[data-h="3"] { font-family: "Redaction 35", "Times New Roman", Times, serif !important; }
+[data-h="4"] { font-family: "Redaction 50", "Times New Roman", Times, serif !important; }
+[data-h="5"] { font-family: "Redaction 70", "Times New Roman", Times, serif !important; }
+[data-h="6"] { font-family: "Redaction 100", "Times New Roman", Times, serif !important; }
 
 .label { font-size: .875rem; line-height: 1.43; font-variant-numeric: tabular-nums; }
 
@@ -319,7 +328,16 @@ a { color: inherit; }
 .deck-count { display: none; }
 
 /* Wide screens: the section pins and scrolling lands one copy at a time on the pile */
-.deck-on.ladder-sheet { height: 260vh; padding: 0; }
+.deck-on.ladder-sheet { height: 260vh; padding: 0; display: flow-root; }
+/* the black pixels stay along the top of the screen for as long as the yellow sheet is pinned */
+.deck-on > .edge {
+  position: sticky;
+  top: -1px;
+  display: block;
+  margin: -1px 0 -127px;
+  z-index: 2;
+  pointer-events: none;
+}
 .deck-on .deck-pin {
   position: sticky;
   top: 0;
@@ -610,7 +628,8 @@ a { color: inherit; }
 .steps-row p { max-width: 28em; font-size: clamp(1.125rem, 1.4vw, 1.25rem); line-height: 1.45; }
 .lost {
   position: relative;
-  background: var(--toner);
+  /* a grid of square pixel dots, centred so it stays symmetrical around the black hole */
+  background: var(--toner) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' shape-rendering='crispEdges'%3E%3Crect x='14' y='14' width='4' height='4' fill='%233f403c'/%3E%3C/svg%3E") center / 32px 32px;
   color: var(--paper);
   padding: 96px var(--gut);
   display: grid;
@@ -619,14 +638,17 @@ a { color: inherit; }
   justify-items: center;
   text-align: center;
 }
-.lost h2 { font-size: clamp(3.25rem, 12vw, 12rem); line-height: 1; letter-spacing: -.015em; }
+.lost-dots { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.lost h2, .lost p { position: relative; }
+/* full width, not shrunk to its text: a box exactly as wide as the line wraps on the smallest rounding error while the hover swaps cuts */
+.lost h2 { width: 100%; font-size: clamp(3.25rem, 12vw, 12rem); line-height: 1; letter-spacing: -.015em; }
 .lost p { max-width: 30em; font-size: clamp(1.125rem, 1.6vw, 1.5rem); line-height: 1.4; }
 
 .journey-on .ladder-sheet { position: sticky; top: var(--zone-stick, 0px); z-index: 1; will-change: transform; }
 .journey-on .track {
   position: relative;
   z-index: 3;
-  height: 520vh;
+  height: 880vh;
   margin-top: -100vh;
   pointer-events: none;
 }
@@ -660,21 +682,169 @@ a { color: inherit; }
 }
 .journey-on .steps-inner h2 { padding-inline: var(--gut); font-size: clamp(2rem, 4vw, 3.5rem); }
 .journey-on .steps-row {
-  display: flex;
-  align-items: end;
-  gap: 8vw;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  grid-template-rows: 1fr auto auto auto;
+  column-gap: 8vw;
+  row-gap: 12px;
   width: max-content;
   padding-inline: var(--gut);
   will-change: transform;
 }
-/* each step is as wide as its title, so a long title can never run into the next one */
-.journey-on .steps-row li { width: max-content; min-width: min(64vw, 900px); }
-.journey-on .steps-row h3 { font-size: min(10vw, 22vh); white-space: nowrap; }
+/* steps share one set of rows, so labels, titles and text line up across the sheet */
+.journey-on .steps-row li { grid-row: 2 / span 3; grid-template-rows: subgrid; }
+/* the tails of g and p hang below the line box, by an amount that grows with the type */
+.journey-on .steps-row h3 { font-size: min(10vw, 22vh); padding-bottom: .08em; white-space: nowrap; }
+/* the title alone sets a step's width and the text wraps to it, so the gap between titles is always the same */
+.journey-on .steps-row p { width: 0; min-width: 100%; }
 .journey-on .lost {
   position: absolute;
   inset: 0;
   visibility: hidden;
 }
+/* Two more sheets after the black one: lost property stood along one shelf on kraft, then the counter's questions on white */
+.found, .counter { position: relative; padding: 128px var(--gut) 96px; }
+.found { background: var(--kraft); }
+.counter { background: var(--paper); }
+.found h2, .counter h2 { font-size: clamp(3rem, 12vw, 8rem); line-height: .96; letter-spacing: -.015em; }
+.found-head p { max-width: 30em; margin-top: 24px; font-size: clamp(1.125rem, 1.4vw, 1.25rem); line-height: 1.45; }
+.found-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; margin-top: 64px; }
+/* everything on a shelf shares one set of rows, so the line stays straight however long a name is */
+.found-list li { display: grid; grid-row: span 3; grid-template-rows: subgrid; }
+/* every object lies on its own identical pane of copier glass */
+.glass {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  border: 3px solid var(--toner);
+  background-color: #e6ece7;
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+}
+.found-sprite { display: block; width: calc(var(--w) * 6px); height: auto; image-rendering: pixelated; }
+.found-name {
+  padding: 24px 16px 4px 0;
+  font-family: var(--display);
+  font-size: clamp(1.25rem, 1.8vw, 2rem);
+  line-height: 1.1;
+}
+.found-list .label { padding: 0 16px 40px 0; }
+.counter-head { margin-bottom: 48px; }
+/* each question is said in a speech bubble with stepped 8-bit corners, and the answer comes back plainly underneath */
+.asks { --p: 6px; display: grid; gap: 40px; }
+.asks div { display: grid; justify-items: start; align-content: start; }
+.asks dt {
+  position: relative;
+  isolation: isolate;
+  padding: calc(var(--p) * 2) calc(var(--p) * 3) calc(var(--p) * 2.5);
+  color: var(--paper);
+  font-family: var(--display);
+  font-size: clamp(1.5rem, 2.5vw, 2.75rem);
+  line-height: 1.08;
+}
+.asks dt::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--toner);
+  clip-path: polygon(
+    calc(var(--p) * 2) 0, calc(100% - var(--p) * 2) 0, calc(100% - var(--p) * 2) var(--p), calc(100% - var(--p)) var(--p),
+    calc(100% - var(--p)) calc(var(--p) * 2), 100% calc(var(--p) * 2), 100% calc(100% - var(--p) * 2), calc(100% - var(--p)) calc(100% - var(--p) * 2),
+    calc(100% - var(--p)) calc(100% - var(--p)), calc(100% - var(--p) * 2) calc(100% - var(--p)), calc(100% - var(--p) * 2) 100%, calc(var(--p) * 2) 100%,
+    calc(var(--p) * 2) calc(100% - var(--p)), var(--p) calc(100% - var(--p)), var(--p) calc(100% - var(--p) * 2), 0 calc(100% - var(--p) * 2),
+    0 calc(var(--p) * 2), var(--p) calc(var(--p) * 2), var(--p) var(--p), calc(var(--p) * 2) var(--p)
+  );
+}
+.asks dt::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: calc(var(--p) * 3);
+  width: calc(var(--p) * 3);
+  height: calc(var(--p) * 3);
+  background: var(--toner);
+  clip-path: polygon(0 0, 100% 0, 100% var(--p), calc(var(--p) * 2) var(--p), calc(var(--p) * 2) calc(var(--p) * 2), var(--p) calc(var(--p) * 2), var(--p) 100%, 0 100%);
+}
+.asks dd { max-width: 26em; margin-top: calc(var(--p) * 3 + 8px); padding-left: calc(var(--p) * 3); font-size: clamp(1rem, 1.3vw, 1.125rem); line-height: 1.45; }
+.asks dt::before, .asks dt::after { transition: background-color .12s steps(2); }
+.asks div.asking dt { color: var(--toner); transform: translateY(calc(var(--p) * -1)); }
+.asks div.asking dt::before, .asks div.asking dt::after { background: var(--stock); }
+.typed-rest { visibility: hidden; }
+.found-list li.copying { cursor: ew-resize; }
+.clerk { display: none; }
+.shred, .fold { display: none; }
+
+.journey-on .found, .journey-on .counter {
+  position: absolute;
+  inset: 0;
+  padding: 72px var(--gut) 40px;
+  display: grid;
+  visibility: hidden;
+}
+.journey-on .found > .edge, .journey-on .counter > .edge { display: none; }
+.journey-on .found > span, .journey-on .counter > span { position: absolute; }
+.journey-on .steps-sheet { z-index: 1; }
+.journey-on .counter { z-index: 2; }
+.journey-on .found { z-index: 3; }
+.journey-on .lost { z-index: 4; }
+.journey-on .found { grid-template-rows: auto 1fr; }
+.journey-on .found h2 { font-size: min(12.4vw, 24vh); line-height: .92; }
+.journey-on .found-head p { margin-top: min(2.4vh, 24px); font-size: clamp(1rem, 2.2vh, 1.25rem); }
+.journey-on .found-list { align-self: end; grid-template-columns: repeat(6, minmax(0, 1fr)); column-gap: clamp(12px, 1.6vw, 24px); margin: 0; }
+.journey-on .glass { max-height: 34vh; border-width: 4px; }
+.journey-on .found-sprite {
+  width: calc(var(--w) * min(.6vw, 1.1vh));
+  width: calc(var(--w) * round(down, min(.6vw, 1.1vh), 1px));
+}
+.journey-on .found-name { padding-right: 0; font-size: max(14px, min(1.56vw, 3.2vh)); }
+.journey-on .found-list .label { padding: 0; }
+/* the bubbles climb from bottom left to top right, leaving the top left corner to the heading */
+.journey-on .counter { grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
+.journey-on .counter-head, .journey-on .asks { grid-area: 1 / 1; margin: 0; }
+.journey-on .counter h2 { font-size: min(7vw, 15vh); }
+.journey-on .asks {
+  --step: min(15.5vh, calc((100vh - 292px) / 3));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: clamp(16px, 2vw, 32px);
+}
+.journey-on .asks div { align-self: start; margin-top: calc(100vh - 112px - max(180px, 18.5vh) - var(--n) * var(--step)); }
+.journey-on .asks div:nth-child(1) { --n: 0; }
+.journey-on .asks div:nth-child(2) { --n: 1; }
+.journey-on .asks div:nth-child(3) { --n: 2; }
+.journey-on .asks div:nth-child(4) { --n: 3; }
+.journey-on .asks dt { font-size: min(2.5vw, 4.6vh); }
+.journey-on .asks dd { margin-top: calc(var(--p) * 3 + min(1vh, 8px)); font-size: clamp(.9375rem, 2vh, 1.125rem); }
+@media (min-width: 1800px) { .journey-on .asks { --p: 8px; } }
+/* the person the questions are for, in the corner the staircase leaves empty */
+.journey-on .clerk {
+  display: block;
+  position: absolute;
+  right: var(--gut);
+  bottom: 40px;
+  width: calc(32 * min(.6vw, 1.1vh));
+  width: calc(32 * round(down, min(.6vw, 1.1vh), 1px));
+  height: auto;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+/* the shredder: slices of the black page that pull apart in whole 8-bit steps */
+.journey-on .shred { display: block; position: absolute; inset: 0; z-index: 5; visibility: hidden; overflow: hidden; }
+.journey-on .track h2, .journey-on .track .steps-row h3 { pointer-events: auto; }
+.journey-on .track .found-list li, .journey-on .track .asks div { pointer-events: auto; }
+.journey-on .track .shred h2, .journey-on .track .fold h2, .journey-on .track .fold li, .journey-on .track .fold .asks div { pointer-events: none; }
+.shred-strip { position: absolute; top: 0; height: 100%; overflow: hidden; will-change: transform; }
+.journey-on .shred .lost { visibility: inherit; inset: 0 auto auto 0; height: 100%; z-index: auto; }
+/* the fold: the top half of the kraft page turns over its crease, and its back is printed with the bottom half of the white page */
+.journey-on .fold { display: block; position: absolute; inset: 0; z-index: 4; visibility: hidden; perspective: 1800px; perspective-origin: 50% 50%; }
+.fold-leaf { position: absolute; inset: 0 0 50%; transform-origin: 50% 100%; transform-style: preserve-3d; will-change: transform; }
+.fold-front, .fold-back { position: absolute; inset: 0; backface-visibility: hidden; overflow: hidden; }
+.fold-back { transform: rotateX(180deg); }
+.fold-shade { position: absolute; inset: 0; background: var(--toner); opacity: 0; }
+.journey-on .fold .found { visibility: inherit; inset: 0 0 auto; height: 100vh; z-index: auto; }
+.journey-on .fold .counter { visibility: inherit; inset: -50vh 0 auto; height: 100vh; z-index: auto; }
 /* Black sheet: the last page restores itself */
 .last { padding-bottom: 32px; }
 .bring {
@@ -710,7 +880,8 @@ a { color: inherit; }
   .foot .fine { grid-column: 1 / -1; }
 }
 @media (max-width: 640px) {
-  .nav { right: 16px; }
+  .nav { right: 0; font-size: min(.9375rem, 3.2vw); }
+  .nav a { padding: 8px 3px; }
   .card-lines { grid-template-columns: minmax(0, 1fr); }
   .card-list { display: none; }
   .card-tag { position: static; display: block; height: auto; padding: 12px 24px 0; }
@@ -738,6 +909,8 @@ a { color: inherit; }
   <a href="#generations">Generations</a>
   <a href="#steps">Steps</a>
   <a href="#lost">Lost</a>
+  <a href="#found">Found</a>
+  <a href="#asked">Asked</a>
   <a href="#rates">Rates</a>
   <span class="nav-bar" id="navBar" aria-hidden="true"></span>
 </nav>
@@ -800,6 +973,41 @@ a { color: inherit; }
         <h2 id="lostTitle">Lost the original?</h2>
         <p>Bring any copy you have and we will run from that. It will be a little worse. Everything here is.</p>
       </section>
+      <section class="found" id="foundPanel">
+        <span id="found"></span>
+        <canvas class="edge" data-from="--toner" aria-hidden="true"></canvas>
+        <div class="found-head">
+          <h2 id="foundTitle">Left on the glass</h2>
+          <p>People lift the copy and forget the original. We keep what we find in a drawer until the end of term, so ask at the counter.</p>
+        </div>
+        <ul class="found-list">
+          <li><span class="glass"><img class="found-sprite" data-sprite="key" alt=""></span><span class="found-name">One door key</span><span class="label">Under the lid, week 2</span></li>
+          <li><span class="glass"><img class="found-sprite" data-sprite="pass" alt=""></span><span class="found-name">Bus pass, expired</span><span class="label">Tray two, week 3</span></li>
+          <li><span class="glass"><img class="found-sprite" data-sprite="flower" alt=""></span><span class="found-name">A pressed flower</span><span class="label">Inside a thesis, week 5</span></li>
+          <li><span class="glass"><img class="found-sprite" data-sprite="letter" alt=""></span><span class="found-name">Love letter, page 2</span><span class="label">On the glass, week 7</span></li>
+          <li><span class="glass"><img class="found-sprite" data-sprite="photo" alt=""></span><span class="found-name">Passport photos</span><span class="label">On the glass, week 9</span></li>
+          <li><span class="glass"><img class="found-sprite" data-sprite="card" alt=""></span><span class="found-name">The biscuit recipe</span><span class="label">On the glass, week 11</span></li>
+        </ul>
+      </section>
+      <section class="counter" id="counterPanel">
+        <span id="asked"></span>
+        <canvas class="edge" data-from="--kraft" aria-hidden="true"></canvas>
+        <div class="counter-head"><h2 id="counterTitle">Asked at the counter</h2></div>
+        <canvas class="clerk" aria-hidden="true"></canvas>
+        <dl class="asks">
+          <div><dt>Do you keep<br>a copy?</dt><dd>No. We clear the machine when your job is done.</dd></div>
+          <div><dt>Can you fix<br>a bad scan?</dt><dd>We can run it cleaner. We cannot put back what the last copy lost.</dd></div>
+          <div><dt>Will it match<br>my last print?</dt><dd>Close, never exact. That is how copies work.</dd></div>
+          <div><dt>Is my thesis<br>too long?</dt><dd>No, but bring it before noon if you want it bound the same day.</dd></div>
+        </dl>
+      </section>
+      <div class="shred" id="shred" aria-hidden="true"></div>
+      <div class="fold" id="fold" aria-hidden="true">
+        <div class="fold-leaf" id="foldLeaf">
+          <div class="fold-front" id="foldFront"><div class="fold-shade" id="foldShade"></div></div>
+          <div class="fold-back" id="foldBack"><div class="fold-shade" id="foldBackShade"></div></div>
+        </div>
+      </div>
     </div>
   </div>
   </div>
@@ -807,7 +1015,7 @@ a { color: inherit; }
   <section class="sheet rates-sheet" id="rates">
     <div class="wipe" id="wipe" aria-hidden="true"></div>
     <canvas class="stock-band" id="stockBand" aria-hidden="true"></canvas>
-    <canvas class="edge" data-from="--toner" aria-hidden="true"></canvas>
+    <canvas class="edge" data-from="--paper" aria-hidden="true"></canvas>
     <div class="section-head">
       <h2>What it costs</h2>
       <p>Prices per side unless the row says otherwise. Paper is included, and so is the guillotine if you ask nicely.</p>
@@ -1554,10 +1762,13 @@ a { color: inherit; }
   var journeyOn = false, journeyP = -1, navStatic = navTargets.slice();
   function journeyAnchor(share) {
     var a = document.createElement('span');
-    a.style.cssText = 'position:absolute;left:0;top:calc((520vh - 100vh) * ' + share + ')';
+    a.style.cssText = 'position:absolute;left:0;top:calc((880vh - 100vh) * ' + share + ')';
     return a;
   }
-  var stepsAnchor = journeyAnchor(.2), lostAnchor = journeyAnchor(1);
+  /* the journey's timetable, in vh of scrolling; .track is this total plus one screen */
+  var J = { steps: 420, shred: 450, found: 540, fold: 610, asked: 720, total: 780 };
+  var stepsAnchor = journeyAnchor(84 / J.total), lostAnchor = journeyAnchor(J.steps / J.total);
+  var foundAnchor = journeyAnchor(J.found / J.total), askedAnchor = journeyAnchor(J.asked / J.total);
   var stuckAnchor = document.createElement('span');
   zone.insertBefore(stuckAnchor, stuckEl);
   /* each pixel of the blue edge drifts on its own timing, with a wave rolling along it; 	ime comes from the scroll position */
@@ -1660,6 +1871,175 @@ a { color: inherit; }
     if (bob) paint([WALK_POSES[pose[0]][5]], top + WALK_HEAD.length + 5);
     paint(WALK_LEGS[pose[1]], top + WALK_HEAD.length + 6);
   }
+  /* ---------- the kraft and white sheets: a shredder in, then a fold out ---------- */
+  var foundPanel = $('foundPanel'), counterPanel = $('counterPanel'), shredEl = $('shred'), foldEl = $('fold'), foldLeaf = $('foldLeaf'), foldShade = $('foldShade'), foldBackShade = $('foldBackShade');
+  var SPRITE_COLOR = { T: '#121311', W: '#fbfbf7', G: '#9a9c95', S: '#f0b183', K: '#ff6ba9', B: '#8ccbf0', Y: '#f5b800', N: '#3f7d4e', R: '#d8423a' };
+  var SPRITES = {
+    key: ['..TTTTT.........', '.TYYYYYT........', 'TYYTTTYYT.......', 'TYT...TYTTTTTTTT', 'TYT...TYYYYYYYYT', 'TYT...TYTTTTYTYT', 'TYYTTTYYT...T.T.', '.TYYYYYT........', '..TTTTT.........'],
+    pass: ['TTTTTTTTTTTTTTTT', 'TBBBBBBBBBBBBBBT', 'TBBBBBBBBBBBBBBT', 'TWWWWWWWWWWWWWWT', 'TWTTTTWWGGGGGGWT', 'TWTSSTWWWWWWWWWT', 'TWTSSTWWGGGGWWWT', 'TWTKKTWWWWWWWWWT', 'TWTTTTWWGGGGGGWT', 'TWWWWWWWWWWWWWWT', 'TTTTTTTTTTTTTTTT'],
+    flower: ['......KKK.......', '...KK.KKK.KK....', '...KKKKKKKKK....', '....KKYYYKK.....', '.KKKKYYYYYKKKK..', '.KKKKYYYYYKKKK..', '....KKYYYKK.....', '...KKKKKKKKK....', '...KK.KKK.KK....', '......KNK.......', '.......N..NN....', '.......N.NN.....', '.......NN.......', '.......N........'],
+    letter: ['TTTTTTTTTTTTTTTT', 'TTWWWWWWWWWWWWTT', 'TWTWWWWWWWWWWTWT', 'TWWTWWWWWWWWTWWT', 'TWWWTWWWWWWTWWWT', 'TWWWWTTKKTTWWWWT', 'TWWWTWTKKTWTWWWT', 'TWWTWWWTTWWWTWWT', 'TWTWWWWWWWWWWTWT', 'TTWWWWWWWWWWWWTT', 'TTTTTTTTTTTTTTTT'],
+    photo: ['..TTTTTTTTTTTT..', '..TBBBBBBBBBBT..', '..TBBBTTTTBBBT..', '..TBBTTTTTTBBT..', '..TBBTSSSSTBBT..', '..TBBSTSSTSBBT..', '..TBBSSSSSSBBT..', '..TBBSSTTSSBBT..', '..TBBBSSSSBBBT..', '..TBKKKKKKKKBT..', '..TKKKKKKKKKKT..', '..TTTTTTTTTTTT..'],
+    card: ['TTTTTTTTTTTTTTTT', 'TWWWWWWWWWWWWWWT', 'TWTTTTTTTTTWWWWT', 'TWWWWWWWWWWWWWWT', 'TRRRRRRRRRRRRRRT', 'TWWWWWWWWWWWWWWT', 'TWGGGGGWGGGGGWWT', 'TWWWWWWWYYWWWWWT', 'TWGGGGWYYYYGGWWT', 'TWWWWWWWYYWWWWWT', 'TWGGGGGWGGGGWWWT', 'TTTTTTTTTTTTTTTT']
+  };
+  /* a sprite after g trips through the copier: the colour goes to grey, then to black and white, and pixels drop out while dust and skew come in */
+  var spriteCopies = {};
+  function spriteCopy(name, g) {
+    var key = name + g;
+    if (spriteCopies[key]) return spriteCopies[key];
+    var rows = SPRITES[name], cv = document.createElement('canvas'), ctx = cv.getContext('2d');
+    /* trimmed to the ink so it sits dead centre on the glass */
+    var left = Infinity, right = 0;
+    rows.forEach(function (row) {
+      left = Math.min(left, row.search(/[^.]/));
+      right = Math.max(right, row.replace(/\.+$/, '').length);
+    });
+    cv.width = right - left;
+    cv.height = rows.length;
+    rows.forEach(function (row, y) {
+      var skew = g >= 5 && grit(y, g) > .7 ? (grit(g, y) > .5 ? 1 : -1) : 0;
+      for (var x = left; x < right; x++) {
+        var c = SPRITE_COLOR[row[x]], px = x - left + skew;
+        if (!c) {
+          if (g && grit(x + g * 3, y) < g * .012) { ctx.fillStyle = SPRITE_COLOR.T; ctx.fillRect(px, y, 1, 1); }
+          continue;
+        }
+        if (g >= 2 && grit(x, y + 40) < (g - 1) * .075) continue;
+        if (g) {
+          var n = parseInt(c.slice(1), 16), r = n >> 16, gr = n >> 8 & 255, b = n & 255, lum = .3 * r + .59 * gr + .11 * b;
+          if (g >= 4) lum = lum + (grit(x, y) - .5) * 60 > 128 ? 251 : 18;
+          else { var mix = g / 3; r += (lum - r) * mix; gr += (lum - gr) * mix; b += (lum - b) * mix; }
+          c = g >= 4 ? 'rgb(' + lum + ',' + lum + ',' + lum + ')' : 'rgb(' + Math.round(r) + ',' + Math.round(gr) + ',' + Math.round(b) + ')';
+        }
+        ctx.fillStyle = c;
+        ctx.fillRect(px, y, 1, 1);
+      }
+    });
+    return (spriteCopies[key] = { url: cv.toDataURL(), w: cv.width });
+  }
+  [].forEach.call(document.querySelectorAll('[data-sprite]'), function (img) {
+    var original = spriteCopy(img.dataset.sprite, 0);
+    img.src = original.url;
+    img.style.setProperty('--w', original.w);
+  });
+  /* the glass catches the light in one stepped streak across a corner */
+  (function () {
+    var cv = document.createElement('canvas'), ctx = cv.getContext('2d'), SIZE = 24;
+    cv.width = cv.height = SIZE;
+    ctx.fillStyle = '#fbfbf7';
+    for (var y = 0; y < SIZE; y++) for (var x = 0; x < SIZE; x++) {
+      var d = x + y;
+      if ((d >= 5 && d <= 7) || d === 9) ctx.fillRect(x, y, 1, 1);
+    }
+    var url = 'url(' + cv.toDataURL() + ')';
+    [].forEach.call(document.querySelectorAll('.glass'), function (g) { g.style.backgroundImage = url; });
+  })();
+  function wearLetters(id) {
+    var el = $(id);
+    el.setAttribute('aria-label', el.textContent);
+    return splitLetters(el).map(function (s) {
+      s.setAttribute('aria-hidden', 'true');
+      return { el: s, cut: 0, seed: Math.random() };
+    });
+  }
+  /* letters print in at their own moment as t runs from 0 to 1 */
+  function printLetters(letters, t) {
+    letters.forEach(function (l) {
+      var local = Math.min(1, Math.max(0, (t - l.seed * .4) / .6));
+      var cut = Math.round((1 - local) * 6);
+      if (cut !== l.cut) { l.cut = cut; setCut(l.el, cut); }
+    });
+  }
+  var foundLetters = wearLetters('foundTitle'), counterLetters = wearLetters('counterTitle');
+  /* a stand-in for a live sheet: same type at its sharpest, no ids */
+  function faceOf(sheet) {
+    var face = sheet.cloneNode(true);
+    face.removeAttribute('id');
+    face.removeAttribute('style');
+    [].forEach.call(face.querySelectorAll('[id]'), function (el) { el.removeAttribute('id'); });
+    [].forEach.call(face.querySelectorAll('.edge, .lost-dots'), function (el) { el.remove(); });
+    [].forEach.call(face.querySelectorAll('h2 span'), function (el) { setCut(el, 0); });
+    return face;
+  }
+  $('foldFront').insertBefore(faceOf(foundPanel), foldShade);
+  $('foldBack').insertBefore(faceOf(counterPanel), foldBackShade);
+  /* the clerk, facing the questions; the fold's back carries one too so nobody pops in when it lands */
+  var CLERK_W = 32, CLERK_H = 26;
+  function drawClerk(open, hop) {
+    [].forEach.call(document.querySelectorAll('.clerk'), function (cv) {
+      var ctx = cv.getContext('2d'), desk = CLERK_H - 8, y = 5 - (hop ? 1 : 0);
+      if (cv.width !== CLERK_W) { cv.width = CLERK_W; cv.height = CLERK_H; }
+      ctx.clearRect(0, 0, CLERK_W, CLERK_H);
+      var body = WALK_HEAD.slice(5).concat(WALK_POSES.down.slice(0, 4));
+      /* the mouth opens downward, a pixel taller */
+      if (open) body[7] = '.....TSSTTT.....';
+      body.forEach(function (row, ry) {
+        for (var rx = 0; rx < row.length; rx++) {
+          var c = WALK_COLOR[row[rx]];
+          if (c) { ctx.fillStyle = c; ctx.fillRect(8 + row.length - 1 - rx, y + ry, 1, 1); }
+        }
+      });
+      /* the counter top, with a stack of paper waiting on it */
+      ctx.fillStyle = WALK_COLOR.T;
+      ctx.fillRect(0, desk, CLERK_W, CLERK_H - desk);
+      ctx.fillStyle = WALK_COLOR.W;
+      ctx.fillRect(1, desk + 1, CLERK_W - 2, CLERK_H - desk - 2);
+      ctx.fillStyle = WALK_COLOR.G;
+      ctx.fillRect(1, CLERK_H - 3, CLERK_W - 2, 2);
+      ctx.fillStyle = WALK_COLOR.T;
+      ctx.fillRect(1, desk - 4, 6, 4);
+      ctx.fillStyle = WALK_COLOR.W;
+      ctx.fillRect(2, desk - 3, 4, 1);
+      ctx.fillRect(2, desk - 1, 4, 1);
+    });
+  }
+  drawClerk(false, false);
+  var strips = [], shredW = 0;
+  function buildShred() {
+    var w = innerWidth;
+    if (w === shredW) return;
+    shredW = w;
+    shredEl.textContent = '';
+    var n = Math.max(8, Math.round(w / 96)), size = Math.ceil(w / n);
+    strips = [];
+    for (var i = 0; i < n; i++) {
+      var strip = document.createElement('div'), face = faceOf(lostPanel);
+      strip.className = 'shred-strip';
+      strip.style.left = i * size + 'px';
+      strip.style.width = size + 'px';
+      face.style.left = -i * size + 'px';
+      face.style.width = w + 'px';
+      strip.appendChild(face);
+      shredEl.appendChild(strip);
+      /* the middle goes first and the tear runs out to both sides; neighbours pull opposite ways */
+      strips.push({ el: strip, dir: i % 2 ? -1 : 1, delay: Math.abs(i - (n - 1) / 2) / ((n - 1) / 2) * .4, y: null });
+    }
+  }
+  function updateLater(at, hole, vh) {
+    var s = Math.min(1, Math.max(0, (at - J.shred) / (J.found - J.shred)));
+    var f = Math.min(1, Math.max(0, (at - J.fold) / (J.asked - J.fold)));
+    panel.style.visibility = hole >= 1 ? 'hidden' : '';
+    if (hole >= 1) lostPanel.style.visibility = s > 0 ? 'hidden' : 'visible';
+    shredEl.style.visibility = s > 0 && s < 1 ? 'visible' : 'hidden';
+    foundPanel.style.visibility = s > 0 && f < 1 ? 'visible' : 'hidden';
+    counterPanel.style.visibility = f > 0 ? 'visible' : 'hidden';
+    if (s > 0 && s < 1) strips.forEach(function (st) {
+      var local = Math.min(1, Math.max(0, (s - st.delay) / .6));
+      var y = Math.round(local * local * (vh + 16) / 16) * 16 * st.dir;
+      if (y !== st.y) { st.y = y; st.el.style.transform = 'translateY(' + y + 'px)'; }
+    });
+    printLetters(foundLetters, s);
+    printLetters(counterLetters, f);
+    /* flat at both ends, so the back lands exactly where the white page's bottom half belongs and the swap can't be seen */
+    foldEl.style.visibility = f > 0 && f < 1 ? 'visible' : 'hidden';
+    foundPanel.style.clipPath = f > 0 ? 'inset(50% 0 0 0)' : '';
+    if (f > 0 && f < 1) {
+      var turn = smooth(f), shade = Math.sin(turn * Math.PI) * .4;
+      foldLeaf.style.transform = 'rotateX(' + -180 * turn + 'deg)';
+      foldShade.style.opacity = shade;
+      foldBackShade.style.opacity = shade;
+    }
+  }
   function measureJourney() {
     if (!journeyOn) return;
     /* positions are in pixels, so a new window size has to redraw them even at the same progress */
@@ -1667,29 +2047,38 @@ a { color: inherit; }
     stuckEl.style.setProperty('--zone-stick', Math.min(0, innerHeight - stuckEl.offsetHeight) + 'px');
     drawEdgeV(0);
     measureWalker();
+    buildShred();
   }
   function setupJourney() {
     journeyOn = !reduce && journeyMq.matches;
     document.documentElement.classList.toggle('journey-on', journeyOn);
     var stepsI = navLinks.findIndex(function (a) { return a.getAttribute('href') === '#steps'; });
     var lostI = navLinks.findIndex(function (a) { return a.getAttribute('href') === '#lost'; });
+    var foundI = navLinks.findIndex(function (a) { return a.getAttribute('href') === '#found'; });
+    var askedI = navLinks.findIndex(function (a) { return a.getAttribute('href') === '#asked'; });
     /* the pinned section reports its stuck position, so the nav aims for a marker that stays where it begins */
     var stuckI = navLinks.findIndex(function (a) { return a.getAttribute('href') === '#generations'; });
     navTargets[stuckI] = journeyOn ? stuckAnchor : navStatic[stuckI];
     if (journeyOn) {
       track.appendChild(stepsAnchor);
       track.appendChild(lostAnchor);
+      track.appendChild(foundAnchor);
+      track.appendChild(askedAnchor);
       navTargets[stepsI] = stepsAnchor;
       navTargets[lostI] = lostAnchor;
+      navTargets[foundI] = foundAnchor;
+      navTargets[askedI] = askedAnchor;
       measureJourney();
       return;
     }
     navTargets[stepsI] = navStatic[stepsI];
     navTargets[lostI] = navStatic[lostI];
+    navTargets[foundI] = navStatic[foundI];
+    navTargets[askedI] = navStatic[askedI];
     holeStep = -1;
-    [stuckEl, panel, panelInner, stepsRow, lostPanel].forEach(function (el) { el.style.transform = ''; el.style.clipPath = ''; el.style.visibility = ''; });
+    [stuckEl, panel, panelInner, stepsRow, lostPanel, foundPanel, counterPanel].forEach(function (el) { el.style.transform = ''; el.style.clipPath = ''; el.style.visibility = ''; });
     stepTitles.forEach(function (t) { t.cut = 0; setCut(t.el, 0); });
-    lostLetters.forEach(function (l) { l.cut = 0; setCut(l.el, 0); });
+    lostLetters.concat(foundLetters, counterLetters).forEach(function (l) { l.cut = 0; setCut(l.el, 0); });
   }
   function smooth(t) { return t * t * (3 - 2 * t); }
   /* the black hole in 8-bit: square pixels, a solid core and a dithered rim, redrawn only when it grows a step */
@@ -1721,10 +2110,11 @@ a { color: inherit; }
   function updateJourney(vh) {
     if (!journeyOn) return;
     var r = track.getBoundingClientRect(), w = innerWidth;
-    var p = Math.min(1, Math.max(0, -r.top / (r.height - vh)));
+    var P = Math.min(1, Math.max(0, -r.top / (r.height - vh)));
     /* compare progress instead of checking if it is on screen, so a long jump never leaves it in a stale state */
-    if (p === journeyP) return;
-    journeyP = p;
+    if (P === journeyP) return;
+    journeyP = P;
+    var at = P * J.total, p = Math.min(1, at / J.steps);
     /* 1: the panel slides over the yellow stack from the right, nudging it left */
     var slide = smooth(Math.min(1, p / .2));
     panel.style.transform = 'translateX(' + (1 - slide) * (w + 128) + 'px)';
@@ -1740,6 +2130,7 @@ a { color: inherit; }
     var hole = Math.min(1, Math.max(0, (p - .76) / .24));
     panelInner.style.transform = hole ? 'scale(' + (1 - .62 * smooth(hole)) + ') rotate(' + (hole * hole * 42) + 'deg)' : '';
     drawHole(hole, w, vh);
+    updateLater(at, hole, vh);
     /* type sharpens as it reaches the middle of the screen, and breaks down as the hole takes it */
     stepTitles.forEach(function (t) {
       var b = t.el.getBoundingClientRect();
@@ -1795,6 +2186,183 @@ a { color: inherit; }
     schedule();
   });
 
+  /* ---------- headlines: the type runs through the cuts around the pointer, from Redaction 100 under it down to 10, then heals ---------- */
+  if (!reduce && matchMedia('(hover: hover) and (pointer: fine)').matches) (function () {
+    var HEAL = 70, heads = new WeakMap(), live = [], pointer = null, rescan = false, running = false;
+    /* the hover waits for every cut: a letter measured in the fallback would keep the wrong width once its font arrives */
+    var cutsReady = !document.fonts;
+    if (document.fonts) Promise.all(['10', '20', '35', '50', '70', '100'].map(function (n) { return document.fonts.load('400 1em "Redaction ' + n + '"'); })).then(function () { cutsReady = true; }, function () {});
+    [].forEach.call(document.querySelectorAll('h2, .steps-row h3'), function (h) {
+      if (h.closest('.shred, .fold')) return;
+      var els = [].filter.call(h.querySelectorAll('span'), function (el) { return !el.children.length && !el.classList.contains('sr-only'); });
+      if (!els.length) {
+        h.setAttribute('aria-label', h.textContent);
+        els = splitLetters(h);
+        els.forEach(function (el) { el.setAttribute('aria-hidden', 'true'); });
+      }
+      heads.set(h, els.map(function (el) { return { el: el, level: 0, due: 0 }; }));
+    });
+    function headAt(target) { return target && target.closest ? target.closest('h2, .steps-row h3') : null; }
+    function show(l, level) {
+      /* the cuts differ slightly in width, so each letter keeps its resting width and the line never shifts under the pointer */
+      if (!l.level) l.rest = l.el.getBoundingClientRect().width;
+      l.level = level;
+      l.el.style.marginRight = '';
+      if (!level) { l.el.removeAttribute('data-h'); return; }
+      l.el.setAttribute('data-h', level);
+      l.el.style.marginRight = l.rest - l.el.getBoundingClientRect().width + 'px';
+    }
+    function step(now) {
+      if (rescan && pointer) { pointer.head = headAt(document.elementFromPoint(pointer.x, pointer.y)); rescan = false; }
+      var letters = cutsReady && pointer && pointer.head && heads.get(pointer.head);
+      if (letters) {
+        var reach = parseFloat(getComputedStyle(pointer.head).fontSize) * 1.6;
+        letters.forEach(function (l) {
+          var b = l.el.getBoundingClientRect();
+          var d = Math.sqrt(Math.pow(b.left + b.width / 2 - pointer.x, 2) + Math.pow(b.top + b.height / 2 - pointer.y, 2));
+          var level = Math.max(0, Math.ceil(6 * (1 - d / reach)));
+          if (level > l.level) {
+            if (!l.level) live.push(l);
+            show(l, level);
+            l.due = now + HEAL * 2;
+          } else if (level === l.level) {
+            l.due = now + HEAL * 2;
+          }
+        });
+      }
+      /* one cut at a time on the way back */
+      live = live.filter(function (l) {
+        if (now >= l.due) { show(l, l.level - 1); l.due = now + HEAL; }
+        return l.level > 0;
+      });
+      if (live.length || (pointer && rescan)) requestAnimationFrame(step); else running = false;
+    }
+    function kick() { if (!running) { running = true; requestAnimationFrame(step); } }
+    addEventListener('pointermove', function (e) {
+      pointer = { x: e.clientX, y: e.clientY, head: headAt(e.target) };
+      if (pointer.head || live.length) kick();
+    }, { passive: true });
+    /* type sliding under a still pointer reacts too */
+    addEventListener('scroll', function () { if (pointer) { rescan = true; kick(); } }, { passive: true });
+    document.documentElement.addEventListener('pointerleave', function () { pointer = null; });
+  })();
+  /* ---------- three things to play with: dots that lean to the pointer, a copier under your hand, and a clerk who answers ---------- */
+  if (!reduce && matchMedia('(hover: hover) and (pointer: fine)').matches) (function () {
+    /* black sheet: the dots near the pointer lean towards it in whole pixels and brighten; same grid as the CSS dots they replace */
+    var dotCv = document.createElement('canvas'), dotCtx = dotCv.getContext('2d'), dots = [], dotW = 0, dotH = 0;
+    var dotPointer = null, dotRunning = false, DOT_REACH = 280, DOT_TONES = ['#3f403c', '#6d6f69', '#a9aba4', '#f2f3ef'];
+    dotCv.className = 'lost-dots';
+    dotCv.setAttribute('aria-hidden', 'true');
+    lostPanel.insertBefore(dotCv, lostPanel.firstChild);
+    function sizeDots() {
+      var w = lostPanel.clientWidth, h = lostPanel.clientHeight, dpr = devicePixelRatio || 1;
+      if (w === dotW && h === dotH) return;
+      dotW = w; dotH = h;
+      dotCv.width = Math.round(w * dpr);
+      dotCv.height = Math.round(h * dpr);
+      dotCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      var x0 = (((w - 32) / 2) % 32 + 32) % 32 - 32 + 14, y0 = (((h - 32) / 2) % 32 + 32) % 32 - 32 + 14;
+      dots = [];
+      for (var y = y0; y < h; y += 32) for (var x = x0; x < w; x += 32) dots.push({ x: x, y: y, ox: 0, oy: 0, tone: 0 });
+      paintDots();
+    }
+    function paintDots() {
+      dotCtx.fillStyle = tokenColor('--toner');
+      dotCtx.fillRect(0, 0, dotW, dotH);
+      dots.forEach(function (d) {
+        dotCtx.fillStyle = DOT_TONES[d.tone];
+        dotCtx.fillRect(d.x + Math.round(d.ox / 4) * 4, d.y + Math.round(d.oy / 4) * 4, 4, 4);
+      });
+    }
+    function dotFrame() {
+      var moving = false;
+      dots.forEach(function (d) {
+        var tx = 0, ty = 0, tone = 0;
+        if (dotPointer) {
+          var dx = dotPointer.x - d.x, dy = dotPointer.y - d.y, dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < DOT_REACH) {
+            var near = 1 - dist / DOT_REACH;
+            tx = dx * near * .8; ty = dy * near * .8;
+            tone = Math.min(3, Math.floor(near * 4.4));
+          }
+        }
+        d.ox += (tx - d.ox) * .14; d.oy += (ty - d.oy) * .14;
+        d.tone = tone;
+        if (Math.abs(tx - d.ox) > .5 || Math.abs(ty - d.oy) > .5) moving = true; else { d.ox = tx; d.oy = ty; }
+      });
+      paintDots();
+      if (moving) requestAnimationFrame(dotFrame); else dotRunning = false;
+    }
+    function kickDots() { if (!dotRunning) { dotRunning = true; requestAnimationFrame(dotFrame); } }
+    sizeDots();
+    addEventListener('resize', sizeDots);
+    if (window.ResizeObserver) new ResizeObserver(sizeDots).observe(lostPanel);
+    addEventListener('pointermove', function (e) {
+      var r = lostPanel.getBoundingClientRect(), inside = lostPanel.style.visibility !== 'hidden' && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      if (inside) { dotPointer = { x: e.clientX - r.left, y: e.clientY - r.top }; kickDots(); }
+      else if (dotPointer) { dotPointer = null; kickDots(); }
+    }, { passive: true });
+
+    /* brown sheet: across a pane is seven trips through the copier, and the caption keeps count */
+    [].forEach.call(foundPanel.querySelectorAll('.found-list li'), function (li) {
+      var img = li.querySelector('.found-sprite'), label = li.querySelector('.label'), glass = li.querySelector('.glass'), rest = label.textContent;
+      var name = img.dataset.sprite, shown = 0, timer = 0;
+      function show(g) {
+        shown = g;
+        img.src = spriteCopy(name, g).url;
+        label.textContent = g ? ORDINAL[g] : (li.classList.contains('copying') ? ORDINAL[0] : rest);
+      }
+      li.addEventListener('pointermove', function (e) {
+        clearInterval(timer); timer = 0;
+        li.classList.add('copying');
+        var b = glass.getBoundingClientRect(), g = Math.max(0, Math.min(6, Math.floor((e.clientX - b.left) / b.width * 7)));
+        if (g !== shown || !shown) show(g);
+      });
+      li.addEventListener('pointerleave', function () {
+        li.classList.remove('copying');
+        /* it recovers one generation at a time */
+        timer = setInterval(function () {
+          show(Math.max(0, shown - 1));
+          if (!shown) { clearInterval(timer); timer = 0; }
+        }, 60);
+        if (!shown) { clearInterval(timer); timer = 0; show(0); }
+      });
+    });
+
+    /* white sheet: a question hops up and the clerk says the answer again, letter by letter, in space already held so nothing reflows */
+    var talkTimer = 0, talking = null, mouth = false;
+    function stopTalking() {
+      clearInterval(talkTimer); talkTimer = 0;
+      if (talking) { talking.dd.textContent = talking.text; talking = null; }
+      drawClerk(false, false);
+    }
+    [].forEach.call(counterPanel.querySelectorAll('.asks div'), function (div) {
+      var dd = div.querySelector('dd'), text = dd.textContent;
+      div.addEventListener('pointerenter', function () {
+        stopTalking();
+        div.classList.add('asking');
+        talking = { dd: dd, text: text };
+        var typed = document.createElement('span'), left = document.createElement('span'), at = 0;
+        left.className = 'typed-rest';
+        dd.textContent = '';
+        dd.appendChild(typed);
+        dd.appendChild(left);
+        left.textContent = text;
+        drawClerk(true, true);
+        talkTimer = setInterval(function () {
+          at++;
+          typed.textContent = text.slice(0, at);
+          left.textContent = text.slice(at);
+          if (at % 3 === 0) { mouth = !mouth; drawClerk(mouth, false); }
+          if (at >= text.length) stopTalking();
+        }, 26);
+      });
+      div.addEventListener('pointerleave', function () {
+        div.classList.remove('asking');
+        stopTalking();
+      });
+    });
+  })();
   /* ---------- rate rows: the name reprints left to right when you point at it ---------- */
   var rateRows = [].slice.call(document.querySelectorAll('.rate'));
   rateRows.forEach(function (row) {
