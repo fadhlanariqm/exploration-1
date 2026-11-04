@@ -13,6 +13,10 @@
 /* Layout idea: a copier run. Each section is a different paper stock, and the type moves between cuts letter by letter. */
 :root {
   --paper: #f2f3ef;
+  --hero-foot: #f2f3ef;
+  --hero-ink: #121311;
+  --neg-bg: #121311;
+  --neg-ink: #f2f3ef;
   --toner: #121311;
   --goldenrod: #f5b800;
   --sky: #8ccbf0;
@@ -111,6 +115,9 @@ a { color: inherit; }
   --pb: 40px;
   position: relative;
   z-index: 1;
+  background: var(--hero-foot);
+  color: var(--hero-ink);
+  overflow-x: clip; /* the sky's last column of fat pixels can run a few px past the edge */
   padding: 56px var(--gut) var(--pb);
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -158,10 +165,34 @@ a { color: inherit; }
   min-height: 0;
   z-index: 4;
   overflow: hidden;
-  background: var(--toner);
-  color: var(--paper);
+  background: var(--neg-bg);
+  color: var(--neg-ink);
   pointer-events: none;
   visibility: hidden;
+}
+/* the sky behind the title screen: four times of day in fat pixels */
+.sky { position: absolute; top: 0; left: 0; z-index: 0; image-rendering: pixelated; pointer-events: none; }
+.daypart { position: absolute; z-index: 6; right: var(--gut); bottom: 24px; display: grid; justify-items: end; gap: 8px; }
+.daypart-note { max-width: 18em; text-align: right; }
+.daypart-row { display: flex; gap: 8px; }
+.daypart button {
+  --lift: 0px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 4px solid var(--toner);
+  background: var(--paper) center / 28px 28px no-repeat;
+  image-rendering: pixelated;
+  cursor: pointer;
+  transform: translate(var(--lift), var(--lift));
+  box-shadow: calc(var(--lift) * -1) calc(var(--lift) * -1) 0 var(--toner);
+}
+.daypart button:hover { --lift: -2px; }
+.daypart button[aria-pressed="true"] { --lift: -4px; background-color: var(--goldenrod); }
+.daypart button:focus-visible { outline: 4px solid var(--stock); outline-offset: 2px; }
+@media (max-width: 1099px) {
+  .daypart { position: relative; right: auto; bottom: auto; grid-row: 4; justify-items: center; }
+  .daypart-note { text-align: center; }
 }
 .plate {
   grid-row: 1;
@@ -267,39 +298,59 @@ a { color: inherit; }
 .card {
   --rule: color-mix(in srgb, var(--toner) 16%, transparent);
   --head: color-mix(in srgb, var(--toner) 60%, transparent);
+  --p: 8px;
+  /* square corners cut in two steps, shared by the sheet and its shadow */
+  --sheet-cut: polygon(
+    calc(var(--p) * 2) 0, calc(100% - var(--p) * 2) 0, calc(100% - var(--p) * 2) var(--p), calc(100% - var(--p)) var(--p),
+    calc(100% - var(--p)) calc(var(--p) * 2), 100% calc(var(--p) * 2), 100% calc(100% - var(--p) * 2), calc(100% - var(--p)) calc(100% - var(--p) * 2),
+    calc(100% - var(--p)) calc(100% - var(--p)), calc(100% - var(--p) * 2) calc(100% - var(--p)), calc(100% - var(--p) * 2) 100%, calc(var(--p) * 2) 100%,
+    calc(var(--p) * 2) calc(100% - var(--p)), var(--p) calc(100% - var(--p)), var(--p) calc(100% - var(--p) * 2), 0 calc(100% - var(--p) * 2),
+    0 calc(var(--p) * 2), var(--p) calc(var(--p) * 2), var(--p) var(--p), calc(var(--p) * 2) var(--p)
+  );
   position: relative;
-  overflow: hidden;
-  background: color-mix(in srgb, #fbfbf7, var(--toner) calc(var(--n) * 6%));
-  box-shadow: 0 1px 2px rgba(18, 19, 17, .2), 0 8px 24px rgba(18, 19, 17, .22);
-  transform: rotate(calc(var(--n) * .3deg));
 }
 .card:first-child { --rule: #a9cde8; --head: #d6453d; }
-/* the shadow a photocopier leaves along the edge of the sheet, wider with every pass */
-.card::before {
+/* a hard shadow in one solid tone, offset by whole pixels */
+.card-drop {
+  position: absolute;
+  inset: 0;
+  transform: translate(8px, 8px);
+  background: var(--toner);
+  clip-path: var(--sheet-cut);
+}
+.card-face {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  background: color-mix(in srgb, #fbfbf7, var(--toner) calc(var(--n) * 6%));
+  clip-path: var(--sheet-cut);
+}
+/* the shadow a photocopier leaves along the edge of the sheet, dithered and wider with every pass */
+.card-face::before {
   content: "";
   position: absolute;
   z-index: 1;
   inset: 0 0 0 auto;
-  width: calc(var(--n) * 10px);
-  background: linear-gradient(to left, rgba(18, 19, 17, .2), rgba(18, 19, 17, 0));
+  width: calc(var(--n) * 16px);
+  background: var(--edge, none) right top repeat-y;
   pointer-events: none;
 }
-/* toner dust from the glass, more of it with every pass */
-.card::after {
+/* toner dust from the glass in square pixels, more of it with every pass */
+.card-face::after {
   content: "";
   position: absolute;
   z-index: 1;
   inset: 0;
-  opacity: calc(var(--n) * .34);
   background-image: var(--dust, none);
-  background-position: calc(var(--n) * 173px) calc(var(--n) * 97px);
+  background-position: calc(var(--n) * 172px) calc(var(--n) * 96px);
   pointer-events: none;
 }
 .card-tag {
   position: absolute;
   z-index: 2;
   top: 0;
-  right: 24px;
+  /* clear of the dithered edge, which widens with every pass */
+  right: calc(24px + var(--n) * 16px);
   height: var(--peek);
   display: flex;
   align-items: center;
@@ -313,7 +364,7 @@ a { color: inherit; }
   line-height: var(--peek);
   letter-spacing: -.01em;
   white-space: nowrap;
-  border-bottom: 2px solid var(--head);
+  border-bottom: 4px solid var(--head);
 }
 .card-lines {
   display: grid;
@@ -321,7 +372,7 @@ a { color: inherit; }
   column-gap: 32px;
   padding: 0 24px;
   line-height: var(--line);
-  background: repeating-linear-gradient(transparent 0 calc(var(--line) - 1px), var(--rule) calc(var(--line) - 1px) var(--line));
+  background: repeating-linear-gradient(transparent 0 calc(var(--line) - 2px), var(--rule) calc(var(--line) - 2px) var(--line));
 }
 .card-list { font-size: calc(var(--body) * .62); }
 .card-method { font-size: var(--body); padding-bottom: var(--line); }
@@ -380,7 +431,6 @@ a { color: inherit; }
   right: 0;
   top: calc(var(--n) * var(--peek));
   height: calc(100vh - 176px - 3 * var(--peek));
-  transform: none;
 }
 .deck-on .card-lines { height: calc(100% - var(--peek)); }
 .deck-on .own { height: 100%; }
@@ -648,7 +698,7 @@ a { color: inherit; }
 .journey-on .track {
   position: relative;
   z-index: 3;
-  height: 880vh;
+  height: 930vh;
   margin-top: -100vh;
   pointer-events: none;
 }
@@ -703,34 +753,78 @@ a { color: inherit; }
   inset: 0;
   visibility: hidden;
 }
-/* Two more sheets after the black one: lost property stood along one shelf on kraft, then the counter's questions on white */
+/* Two more sheets after the black one: lost property as an inventory on kraft, then the counter's questions on white */
 .found, .counter { position: relative; padding: 128px var(--gut) 96px; }
 .found { background: var(--kraft); }
 .counter { background: var(--paper); }
 .found h2, .counter h2 { font-size: clamp(3rem, 12vw, 8rem); line-height: .96; letter-spacing: -.015em; }
 .found-head p { max-width: 30em; margin-top: 24px; font-size: clamp(1.125rem, 1.4vw, 1.25rem); line-height: 1.45; }
-.found-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; margin-top: 64px; }
-/* everything on a shelf shares one set of rows, so the line stays straight however long a name is */
-.found-list li { display: grid; grid-row: span 3; grid-template-rows: subgrid; }
-/* every object lies on its own identical pane of copier glass */
+/* lost property as a game inventory: pick a slot, and the big window shows that item */
+.found-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 40px; }
 .glass {
+  background-color: #e6ece7;
+  background-repeat: no-repeat;
+  background-position: left top;
+  background-size: auto 100%;
+  image-rendering: pixelated;
+}
+.slot {
+  --lift: 0px;
+  position: relative;
   display: grid;
   place-items: center;
   width: 100%;
   aspect-ratio: 1;
-  border: 3px solid var(--toner);
-  background-color: #e6ece7;
-  background-size: 100% 100%;
-  image-rendering: pixelated;
+  padding: 0;
+  border: 4px solid var(--toner);
+  cursor: pointer;
+  transform: translate(var(--lift), var(--lift));
+  box-shadow: calc(var(--lift) * -2) calc(var(--lift) * -2) 0 var(--toner);
 }
-.found-sprite { display: block; width: calc(var(--w) * 6px); height: auto; image-rendering: pixelated; }
-.found-name {
-  padding: 24px 16px 4px 0;
-  font-family: var(--display);
-  font-size: clamp(1.25rem, 1.8vw, 2rem);
-  line-height: 1.1;
+.slot:focus-visible { outline: 4px solid var(--stock); outline-offset: 2px; }
+.slot[aria-pressed="true"] { --lift: -4px; background-color: #fbfbf7; }
+/* the menu cursor: a stepped arrow over the chosen slot */
+.slot[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: -24px;
+  width: 24px;
+  height: 16px;
+  margin-left: -12px;
+  background: var(--stock);
+  clip-path: polygon(0 0, 100% 0, 100% 4px, calc(100% - 4px) 4px, calc(100% - 4px) 8px, calc(100% - 8px) 8px, calc(100% - 8px) 12px, 8px 12px, 8px 8px, 4px 8px, 4px 4px, 0 4px);
 }
-.found-list .label { padding: 0 16px 40px 0; }
+.found-sprite { display: block; width: calc(var(--w) * 4px); height: auto; image-rendering: pixelated; }
+.case { margin-top: 24px; }
+.case-frame {
+  --p: 8px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  height: 100%;
+  padding: 12px;
+  background: var(--toner);
+  color: var(--paper);
+  clip-path: polygon(calc(var(--p) * 2) 0, calc(100% - var(--p) * 2) 0, calc(100% - var(--p) * 2) var(--p), calc(100% - var(--p)) var(--p), calc(100% - var(--p)) calc(var(--p) * 2), 100% calc(var(--p) * 2), 100% calc(100% - var(--p) * 2), calc(100% - var(--p)) calc(100% - var(--p) * 2), calc(100% - var(--p)) calc(100% - var(--p)), calc(100% - var(--p) * 2) calc(100% - var(--p)), calc(100% - var(--p) * 2) 100%, calc(var(--p) * 2) 100%, calc(var(--p) * 2) calc(100% - var(--p)), var(--p) calc(100% - var(--p)), var(--p) calc(100% - var(--p) * 2), 0 calc(100% - var(--p) * 2), 0 calc(var(--p) * 2), var(--p) calc(var(--p) * 2), var(--p) var(--p), calc(var(--p) * 2) var(--p));
+}
+.case-count { display: flex; justify-content: space-between; gap: 16px; padding: 4px 8px 0; }
+@media (hover: none) { .case-hint { display: none; } }
+.case-view {
+  display: grid;
+  place-items: center;
+  min-height: 240px;
+  cursor: ew-resize;
+  touch-action: pan-y;
+}
+.case-sprite { display: block; width: calc(var(--w) * 8px); height: auto; image-rendering: pixelated; filter: drop-shadow(8px 8px 0 rgba(18, 19, 17, .22)); }
+.case-info { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 32px; padding: 4px 8px 8px; }
+.case-name { font-family: var(--display); font-size: clamp(1.5rem, 3vw, 3rem); line-height: 1.05; }
+.case-copies { display: grid; justify-items: end; gap: 8px; }
+.case-pips { display: flex; gap: 4px; }
+.case-pips i { display: block; width: 16px; height: 16px; background: #3f403c; }
+.case-pips i.on { background: var(--stock); }
 .counter-head { margin-bottom: 48px; }
 /* each question is said in a speech bubble with stepped 8-bit corners, and the answer comes back plainly underneath */
 .asks { --p: 6px; display: grid; gap: 40px; }
@@ -773,9 +867,8 @@ a { color: inherit; }
 .asks div.asking dt { color: var(--toner); transform: translateY(calc(var(--p) * -1)); }
 .asks div.asking dt::before, .asks div.asking dt::after { background: var(--stock); }
 .typed-rest { visibility: hidden; }
-.found-list li.copying { cursor: ew-resize; }
 .clerk { display: none; }
-.shred, .fold { display: none; }
+.bite, .fold { display: none; }
 
 .journey-on .found, .journey-on .counter {
   position: absolute;
@@ -790,17 +883,26 @@ a { color: inherit; }
 .journey-on .counter { z-index: 2; }
 .journey-on .found { z-index: 3; }
 .journey-on .lost { z-index: 4; }
-.journey-on .found { grid-template-rows: auto 1fr; }
-.journey-on .found h2 { font-size: min(12.4vw, 24vh); line-height: .92; }
-.journey-on .found-head p { margin-top: min(2.4vh, 24px); font-size: clamp(1rem, 2.2vh, 1.25rem); }
-.journey-on .found-list { align-self: end; grid-template-columns: repeat(6, minmax(0, 1fr)); column-gap: clamp(12px, 1.6vw, 24px); margin: 0; }
-.journey-on .glass { max-height: 34vh; border-width: 4px; }
+/* the inventory fills one screen: heading and slots on the left, the item window on the right */
+.journey-on .found { grid-template: minmax(0, 1fr) / minmax(0, 5fr) minmax(0, 7fr); column-gap: clamp(20px, 3vw, 48px); }
+.journey-on .found-left { display: flex; flex-direction: column; justify-content: space-between; gap: 16px; min-height: 0; }
+.journey-on .found h2 { font-size: min(6.8vw, 13vh); line-height: .92; }
+.journey-on .found-head p { margin-top: min(2.4vh, 24px); font-size: clamp(.875rem, 2vh, 1.25rem); }
+.journey-on .found-list { margin: 0; gap: clamp(12px, 2.4vh, 24px) clamp(8px, 1vw, 16px); }
 .journey-on .found-sprite {
-  width: calc(var(--w) * min(.6vw, 1.1vh));
-  width: calc(var(--w) * round(down, min(.6vw, 1.1vh), 1px));
+  --c: min(.5vw, .9vh);
+  width: calc(var(--w) * var(--c));
+  width: calc(var(--w) * round(down, var(--c), 1px));
 }
-.journey-on .found-name { padding-right: 0; font-size: max(14px, min(1.56vw, 3.2vh)); }
-.journey-on .found-list .label { padding: 0; }
+.journey-on .case { min-height: 0; margin: 0; }
+.journey-on .case-view { min-height: 0; }
+.journey-on .case-sprite {
+  --c: min(1.6vw, 3vh);
+  width: calc(var(--w) * var(--c));
+  width: calc(var(--w) * round(down, var(--c), 1px));
+}
+.journey-on .case-name { font-size: min(3.2vw, 6vh); }
+
 /* the bubbles climb from bottom left to top right, leaving the top left corner to the heading */
 .journey-on .counter { grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
 .journey-on .counter-head, .journey-on .asks { grid-area: 1 / 1; margin: 0; }
@@ -830,21 +932,12 @@ a { color: inherit; }
   image-rendering: pixelated;
   pointer-events: none;
 }
-/* the shredder: slices of the black page that pull apart in whole 8-bit steps */
-.journey-on .shred { display: block; position: absolute; inset: 0; z-index: 5; visibility: hidden; overflow: hidden; }
+/* the bite: 8-bit jaws eat the black page, drawn one chunky cell at a time */
+.journey-on .bite { display: block; position: absolute; top: 0; left: 0; z-index: 5; visibility: hidden; image-rendering: pixelated; pointer-events: none; }
 .journey-on .track h2, .journey-on .track .steps-row h3 { pointer-events: auto; }
-.journey-on .track .found-list li, .journey-on .track .asks div { pointer-events: auto; }
-.journey-on .track .shred h2, .journey-on .track .fold h2, .journey-on .track .fold li, .journey-on .track .fold .asks div { pointer-events: none; }
-.shred-strip { position: absolute; top: 0; height: 100%; overflow: hidden; will-change: transform; }
-.journey-on .shred .lost { visibility: inherit; inset: 0 auto auto 0; height: 100%; z-index: auto; }
-/* the fold: the top half of the kraft page turns over its crease, and its back is printed with the bottom half of the white page */
-.journey-on .fold { display: block; position: absolute; inset: 0; z-index: 4; visibility: hidden; perspective: 1800px; perspective-origin: 50% 50%; }
-.fold-leaf { position: absolute; inset: 0 0 50%; transform-origin: 50% 100%; transform-style: preserve-3d; will-change: transform; }
-.fold-front, .fold-back { position: absolute; inset: 0; backface-visibility: hidden; overflow: hidden; }
-.fold-back { transform: rotateX(180deg); }
-.fold-shade { position: absolute; inset: 0; background: var(--toner); opacity: 0; }
-.journey-on .fold .found { visibility: inherit; inset: 0 0 auto; height: 100vh; z-index: auto; }
-.journey-on .fold .counter { visibility: inherit; inset: -50vh 0 auto; height: 100vh; z-index: auto; }
+.journey-on .track .found-list li, .journey-on .track .case-view, .journey-on .track .asks div { pointer-events: auto; }
+/* the fold: the top half of the kraft page turns over its crease in chunky pixels, like a page flip on an old console */
+.journey-on .fold { display: block; position: absolute; top: 0; left: 0; z-index: 4; visibility: hidden; image-rendering: pixelated; pointer-events: none; }
 /* Black sheet: the last page restores itself */
 .last { padding-bottom: 32px; }
 .bring {
@@ -917,6 +1010,7 @@ a { color: inherit; }
 
 <main>
   <section class="hero" id="copier">
+    <canvas class="sky" id="sky" aria-hidden="true"></canvas>
 
     <h1 class="plate" id="plate">
       <span class="ink g0" id="inkNow"><span>Copy of a copy,</span><span><em>on purpose</em></span></span>
@@ -929,10 +1023,19 @@ a { color: inherit; }
 
     <button class="level" id="stage" type="button" aria-label="Run a copy"><canvas id="stageCanvas" aria-hidden="true"></canvas></button>
 
+    <div class="daypart" role="group" aria-label="Time of day">
+      <p class="label daypart-note" aria-live="polite"></p>
+      <div class="daypart-row">
+        <button type="button" data-time="morning" aria-label="Morning" title="Morning"></button>
+        <button type="button" data-time="noon" aria-label="Noon" title="Noon"></button>
+        <button type="button" data-time="dusk" aria-label="Late afternoon" title="Late afternoon"></button>
+        <button type="button" data-time="night" aria-label="Night" title="Night"></button>
+      </div>
+    </div>
   </section>
 
   <section class="sheet reverse" id="idea">
-    <canvas class="edge" data-from="--paper" aria-hidden="true"></canvas>
+    <canvas class="edge" data-from="--hero-foot" aria-hidden="true"></canvas>
     <p class="side-label label">The idea</p>
     <p class="read" data-read>Every copy loses something. A little ink off the curves, a speck from the glass, a shadow where the lid would not close.</p>
     <p class="read" data-read>Bring us your lecture notes, your band flyer, your grandmother's recipe, and we will run it as clean as the glass allows.</p>
@@ -976,18 +1079,36 @@ a { color: inherit; }
       <section class="found" id="foundPanel">
         <span id="found"></span>
         <canvas class="edge" data-from="--toner" aria-hidden="true"></canvas>
-        <div class="found-head">
-          <h2 id="foundTitle">Left on the glass</h2>
-          <p>People lift the copy and forget the original. We keep what we find in a drawer until the end of term, so ask at the counter.</p>
+        <div class="found-left">
+          <div class="found-head">
+            <h2 id="foundTitle">Left on <br>the glass</h2>
+            <p>People lift the copy and forget the original. We keep what we find in a drawer until the end of term, so ask at the counter.</p>
+          </div>
+          <ul class="found-list" id="foundSlots">
+            <li><button type="button" class="slot glass" data-name="One door key" data-where="Under the lid, week 2"><img class="found-sprite" data-sprite="key" alt=""><span class="sr-only">One door key</span></button></li>
+            <li><button type="button" class="slot glass" data-name="Bus pass, expired" data-where="Tray two, week 3"><img class="found-sprite" data-sprite="pass" alt=""><span class="sr-only">Bus pass, expired</span></button></li>
+            <li><button type="button" class="slot glass" data-name="A pressed flower" data-where="Inside a thesis, week 5"><img class="found-sprite" data-sprite="flower" alt=""><span class="sr-only">A pressed flower</span></button></li>
+            <li><button type="button" class="slot glass" data-name="Love letter, page 2" data-where="On the glass, week 7"><img class="found-sprite" data-sprite="letter" alt=""><span class="sr-only">Love letter, page 2</span></button></li>
+            <li><button type="button" class="slot glass" data-name="Passport photos" data-where="On the glass, week 9"><img class="found-sprite" data-sprite="photo" alt=""><span class="sr-only">Passport photos</span></button></li>
+            <li><button type="button" class="slot glass" data-name="The biscuit recipe" data-where="On the glass, week 11"><img class="found-sprite" data-sprite="card" alt=""><span class="sr-only">The biscuit recipe</span></button></li>
+          </ul>
         </div>
-        <ul class="found-list">
-          <li><span class="glass"><img class="found-sprite" data-sprite="key" alt=""></span><span class="found-name">One door key</span><span class="label">Under the lid, week 2</span></li>
-          <li><span class="glass"><img class="found-sprite" data-sprite="pass" alt=""></span><span class="found-name">Bus pass, expired</span><span class="label">Tray two, week 3</span></li>
-          <li><span class="glass"><img class="found-sprite" data-sprite="flower" alt=""></span><span class="found-name">A pressed flower</span><span class="label">Inside a thesis, week 5</span></li>
-          <li><span class="glass"><img class="found-sprite" data-sprite="letter" alt=""></span><span class="found-name">Love letter, page 2</span><span class="label">On the glass, week 7</span></li>
-          <li><span class="glass"><img class="found-sprite" data-sprite="photo" alt=""></span><span class="found-name">Passport photos</span><span class="label">On the glass, week 9</span></li>
-          <li><span class="glass"><img class="found-sprite" data-sprite="card" alt=""></span><span class="found-name">The biscuit recipe</span><span class="label">On the glass, week 11</span></li>
-        </ul>
+        <div class="case">
+          <div class="case-frame">
+            <p class="case-count label"><span>Item <span id="caseIndex">1</span> of 6</span><span class="case-hint">Move across the glass to copy it</span></p>
+            <div class="case-view glass" id="caseView"><img class="case-sprite" id="caseSprite" alt=""></div>
+            <div class="case-info" aria-live="polite">
+              <div>
+                <p class="case-name" id="caseName">One door key</p>
+                <p class="label" id="caseWhere">Under the lid, week 2</p>
+              </div>
+              <div class="case-copies">
+                <span class="case-pips" id="casePips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+                <span class="label" id="caseCopy">Original</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
       <section class="counter" id="counterPanel">
         <span id="asked"></span>
@@ -1001,13 +1122,8 @@ a { color: inherit; }
           <div><dt>Is my thesis<br>too long?</dt><dd>No, but bring it before noon if you want it bound the same day.</dd></div>
         </dl>
       </section>
-      <div class="shred" id="shred" aria-hidden="true"></div>
-      <div class="fold" id="fold" aria-hidden="true">
-        <div class="fold-leaf" id="foldLeaf">
-          <div class="fold-front" id="foldFront"><div class="fold-shade" id="foldShade"></div></div>
-          <div class="fold-back" id="foldBack"><div class="fold-shade" id="foldBackShade"></div></div>
-        </div>
-      </div>
+      <canvas class="bite" id="bite" aria-hidden="true"></canvas>
+      <canvas class="fold" id="fold" aria-hidden="true"></canvas>
     </div>
   </div>
   </div>
@@ -1129,26 +1245,35 @@ a { color: inherit; }
   var LADDER = [0, 2, 4, 6];
   $('ladder').innerHTML = LADDER.map(function (cut, i) {
     /* the copies repeat the original, so only its text is read aloud */
-    return '<li class="card" style="--n:' + i + '"><span class="card-tag label">' + ORDINAL[cut] + ', ' + CUTS[cut] + '</span>' +
+    return '<li class="card" style="--n:' + i + '"><span class="card-drop" aria-hidden="true"></span><div class="card-face"><span class="card-tag label">' + ORDINAL[cut] + ', ' + CUTS[cut] + '</span>' +
       '<div class="own g' + cut + '"' + (i ? ' aria-hidden="true"' : '') + '><h3 class="card-title">Burnt butter biscuits</h3>' +
       '<div class="card-lines"><ul class="card-list">' +
       ['200 g butter', '150 g sugar', '1 egg', '250 g flour', 'A pinch of salt'].map(function (x) { return '<li>' + x + '</li>'; }).join('') +
-      '</ul><p class="card-method">Melt the butter until it foams. Add the sugar when the butter stops talking. Fold in the egg and the flour. Bake until the edges give up.</p></div></div></li>';
+      '</ul><p class="card-method">Melt the butter until it foams. Add the sugar when the butter stops talking. Fold in the egg and the flour. Bake until the edges give up.</p></div></div></div></li>';
   }).join('');
-  /* a large tile of randomly scattered specks, so the dust never shows a repeating grid */
+  /* each copy gets its own wear: a large tile of square specks, so the dust never shows a repeating grid, and a dithered shadow down the right edge */
   (function () {
-    var cv = document.createElement('canvas'), ctx = cv.getContext('2d');
-    cv.width = cv.height = 720;
-    ctx.fillStyle = '#121311';
-    for (var i = 0; i < 420; i++) {
-      var r = Math.random() < .06 ? 1.1 + Math.random() * .9 : .4 + Math.random() * .5;
-      ctx.beginPath();
-      ctx.arc(Math.random() * 720, Math.random() * 720, r, 0, 6.3);
-      ctx.fill();
-    }
-    $('ladder').style.setProperty('--dust', 'url(' + cv.toDataURL() + ')');
+    var DOT = 4, SPECKS = [0, 70, 160, 300];
+    [].forEach.call($('ladder').children, function (li, n) {
+      if (!n) return;
+      var cv = document.createElement('canvas'), ctx = cv.getContext('2d');
+      cv.width = cv.height = 720;
+      ctx.fillStyle = '#121311';
+      for (var i = 0; i < SPECKS[n]; i++) {
+        var size = Math.random() < .12 ? DOT * 2 : DOT;
+        ctx.fillRect(Math.floor(Math.random() * 180) * DOT, Math.floor(Math.random() * 180) * DOT, size, size);
+      }
+      li.style.setProperty('--dust', 'url(' + cv.toDataURL() + ')');
+      var edge = document.createElement('canvas'), ec = edge.getContext('2d'), cols = n * 4;
+      edge.width = cols * DOT;
+      edge.height = 8 * DOT;
+      ec.fillStyle = '#121311';
+      for (var y = 0; y < 8; y++) for (var x = 0; x < cols; x++) {
+        if ((BAYER[y][x % 8] + .5) / 64 < (x + 1) / cols * .45) ec.fillRect(x * DOT, y * DOT, DOT, DOT);
+      }
+      li.style.setProperty('--edge', 'url(' + edge.toDataURL() + ')');
+    });
   })();
-
   /* ---------- deck: on wide screens, scrolling feeds each card onto the stack and wears it down a cut ---------- */
   var deckMq = matchMedia('(min-width: 1100px) and (min-height: 620px)');
   var deckSection = $('generations'), deckSheets = [].slice.call($('ladder').children);
@@ -1172,9 +1297,10 @@ a { color: inherit; }
       var local = clamp01(seg - (n - 1));
       var feed = 1 - Math.pow(1 - clamp01(local / .5), 3);
       var scan = clamp01((local - .5) / .5);
-      var y = (1 - feed) * (ladderH - li.offsetTop + 200);
-      var rot = n * .6 + (1 - feed) * (n % 2 ? 4 : -4);
-      li.style.transform = 'translate(' + (n * 6) + 'px,' + y + 'px) rotate(' + rot + 'deg)';
+      /* no tilt: a sheet feeds in whole 8px steps and lands square, a few pixels off the one below */
+      var y = Math.round((1 - feed) * (ladderH - li.offsetTop + 200) / 8) * 8;
+      var x = n * 8 + Math.round((1 - feed) * (n % 2 ? 5 : -5)) * 8;
+      li.style.transform = 'translate(' + x + 'px,' + y + 'px)';
       /* the card wears down letter by letter once it has landed */
       setSheetCuts(n, scan);
       if (scan > .5) pass = n;
@@ -1208,6 +1334,7 @@ a { color: inherit; }
   setupDeck();
   deckMq.addEventListener('change', function () { setupDeck(); schedule(); });
 
+  var heroTime = 'noon', redrawLevel = function () {};
   /* ---------- hero: the headline stays crisp, and wears down around the pointer ---------- */
   (function () {
     var plate = $('plate'), ink = $('inkNow');
@@ -1221,6 +1348,10 @@ a { color: inherit; }
       c.removeAttribute('id');
       neg.appendChild(c);
     });
+    /* holds the same row the page has when the buttons drop into the flow, so both versions stay lined up */
+    var negDay = hero.querySelector('.daypart').cloneNode(true);
+    negDay.style.visibility = 'hidden';
+    neg.appendChild(negDay);
     var negInk = neg.querySelector('#inkNow');
     negInk.removeAttribute('id');
     /* the negative's letters wear in step with the headline, so the animation stays visible through the pixels */
@@ -1360,14 +1491,36 @@ a { color: inherit; }
       rect(0, g + 2, level.w, 1, C.D);
       for (var x = 0; x < level.w; x += 12) { rect(x, g + 1, 1, 1, C.D); rect(x + 6, g + 3, 1, 2, C.D); }
     }
+    /* the only light left on at night: the copier, thrown across the shop in a dithered pool */
+    function drawNightLight() {
+      var cx = level.copierX + 8, cy = level.ground - 14, R = 42;
+      sctx.fillStyle = '#f8e7a8';
+      for (var y = Math.max(0, cy - R); y < level.ground; y++) for (var x = Math.max(0, cx - R); x < Math.min(level.w, cx + R); x++) {
+        var d = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) / R;
+        if (d < 1 && Math.pow(1 - d, 1.4) * .85 > (BAYER[y % 8][x % 8] + .5) / 64) sctx.fillRect(x, y, 1, 1);
+      }
+    }
+    /* someone asleep on their feet, waiting for the machine */
+    function drawSnore() {
+      if (level.walking) return;
+      var t = Math.floor(level.light / 6) % 3, x = level.x + (level.flip ? 1 : 13), top = level.ground - SPR_H - 4;
+      sctx.fillStyle = '#f2f3ef';
+      for (var i = 0; i <= t; i++) {
+        var zx = x + i * 4, zy = top - i * 4;
+        sctx.fillRect(zx, zy, 3, 1); sctx.fillRect(zx + 1, zy + 1, 1, 1); sctx.fillRect(zx, zy + 2, 3, 1);
+      }
+    }
     function drawLevel() {
       sctx.clearRect(0, 0, level.w, level.h);
+      if (heroTime === 'night') drawNightLight();
       drawFloor();
       drawPile();
       drawCopierMachine();
       level.sheets.forEach(function (s) { rect(Math.round(s.x) - 1, Math.round(s.y) - 1, 8, 3, C.T); rect(Math.round(s.x), Math.round(s.y), 6, 1, C.W); });
       drawStudent();
+      if (heroTime === 'night') drawSnore();
     }
+    redrawLevel = drawLevel;
     function measureLevel() {
       var w = stageEl.clientWidth, h = stageEl.clientHeight;
       /* big, visible pixels: copier plus floor is 34 tall, and whole screen pixels keep every block square */
@@ -1639,6 +1792,213 @@ a { color: inherit; }
     });
   }
 
+  /* ---------- the hero's time of day: follows the visitor's clock until they pick one ---------- */
+  (function () {
+    var hero = $('copier'), cv = $('sky'), ctx = cv.getContext('2d'), SKY_CELL = 8;
+    var TIMES = {
+      morning: { bands: ['#7fc4ee', '#b9def0', '#f4e2cc', '#fbcfa6'], ink: '#121311', negBg: '#121311', negInk: '#f2f3ef', note: 'Longest queue at 7:40am on deadline day' },
+      noon: { bands: ['#56aee8', '#8ccbf0', '#bfe3f5', '#e9f5f6'], ink: '#121311', negBg: '#121311', negInk: '#f2f3ef', note: 'Bring a thesis before noon to have it bound the same day' },
+      dusk: { bands: ['#ff6ba9', '#ff8a7d', '#ffae5a', '#f5b800'], ink: '#121311', negBg: '#121311', negInk: '#f2f3ef', note: 'Open until 10pm in term time' },
+      night: { bands: ['#0d1024', '#1a2148', '#3a4a7c', '#4a5a90'], ink: '#f2f3ef', negBg: '#f2f3ef', negInk: '#121311', note: 'Open until 2am in exam week' }
+    };
+    /* the small pictures on the buttons */
+    var ICONS = {
+      morning: ['.........', '....Y....', '.Y.....Y.', '...YYY...', '..YYYYY..', '.YYYYYYY.', 'TTTTTTTTT', '.........', '.........'],
+      noon: ['....Y....', '.Y.....Y.', '...YYY...', '..YYYYY..', 'Y.YYYYY.Y', '..YYYYY..', '...YYY...', '.Y.....Y.', '....Y....'],
+      dusk: ['.........', '...KKK...', '..KKKKK..', '.KKKKKKK.', '.........', '.KKKKKKK.', '.........', '..KKKKK..', 'TTTTTTTTT'],
+      night: ['...TTT...', '..TTT....', '.TTT.....', '.TTT.....', '.TTT.....', '.TTTT...T', '..TTTTTTT', '...TTTTT.', '.........']
+    };
+    var INK = { Y: '#d99a00', T: '#121311', K: '#e0457f' };
+    var buttons = [].slice.call(hero.querySelectorAll('.daypart button'));
+    var notes = [].slice.call(document.querySelectorAll('.daypart-note')); /* the negative's hidden copy has to keep the same height */
+    buttons.forEach(function (b) {
+      var c = document.createElement('canvas'), x = c.getContext('2d'), rows = ICONS[b.dataset.time];
+      c.width = c.height = 9;
+      rows.forEach(function (row, ry) {
+        for (var rx = 0; rx < 9; rx++) if (INK[row[rx]]) { x.fillStyle = INK[row[rx]]; x.fillRect(rx, ry, 1, 1); }
+      });
+      b.style.backgroundImage = 'url(' + c.toDataURL() + ')';
+    });
+    var cols = 0, rows = 0, bases = {}, image = null, tick = 0, now = null, from = null, fade = 1, picked = false, lastDraw = 0, running = false;
+    function rgba(hex) {
+      var n = parseInt(hex.slice(1), 16);
+      return (255 << 24 | (n & 255) << 16 | (n >> 8 & 255) << 8 | n >> 16) >>> 0;
+    }
+    /* one dithered gradient for each time, kept ready so a change only has to pick between two of them */
+    function buildBase(name) {
+      var b = TIMES[name].bands.map(rgba), out = new Uint32Array(cols * rows), last = b.length - 1;
+      for (var y = 0; y < rows; y++) {
+        /* the last stretch is one solid colour, so it meets the next section's dithered edge cleanly */
+        var p = Math.min(last, y / (rows * .88) * last), i = Math.floor(p), f = p - i;
+        for (var x = 0; x < cols; x++) {
+          out[y * cols + x] = b[f > (BAYER[y % 8][x % 8] + .5) / 64 ? Math.min(last, i + 1) : i];
+        }
+      }
+      return out;
+    }
+    function measure() {
+      var w = hero.clientWidth, h = hero.clientHeight, c = Math.ceil(w / SKY_CELL), r = Math.ceil(h / SKY_CELL);
+      if (c === cols && r === rows) return;
+      cols = c; rows = r;
+      cv.width = cols;
+      cv.height = rows;
+      cv.style.width = cols * SKY_CELL + 'px';
+      cv.style.height = rows * SKY_CELL + 'px';
+      image = ctx.createImageData(cols, rows);
+      bases = {};
+      Object.keys(TIMES).forEach(function (n) { bases[n] = buildBase(n); });
+      draw();
+    }
+    function box(x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w, h); }
+    function disc(cx, cy, r, c, skip) {
+      ctx.fillStyle = c;
+      for (var dy = -r; dy <= r; dy++) {
+        if (skip && skip(dy)) continue;
+        var half = Math.round(Math.sqrt(r * r - dy * dy));
+        ctx.fillRect(Math.round(cx - half), Math.round(cy + dy), half * 2 + 1, 1);
+      }
+    }
+    function cloud(x, y, w, top, under) {
+      box(x + w * .25, y, Math.round(w * .35), 2, top);
+      box(x + w * .08, y + 2, Math.round(w * .75), 2, top);
+      box(x, y + 4, w, 2, top);
+      box(x + w * .12, y + 6, Math.round(w * .7), 1, under);
+    }
+    function clouds(list, top, under) {
+      list.forEach(function (c) {
+        var w = c[2], span = cols + w + 8, x = ((c[3] * cols + tick * c[1]) % span) - w - 4;
+        cloud(x, rows * c[0], w, top, under);
+      });
+    }
+    /* the sun or moon rises into place as its time arrives, and sinks as it leaves */
+    function body(name, show) {
+      var off = (1 - show) * rows * .9;
+      if (name === 'morning') {
+        var mr = Math.round(rows * .1);
+        disc(cols * .13, rows * .6 + off, mr + 3, '#fde3a0');
+        disc(cols * .13, rows * .6 + off, mr, '#ffc53d');
+      } else if (name === 'noon') {
+        var nr = Math.round(rows * .085), nx = cols * .84, ny = rows * .2 + off, on = Math.floor(tick / 4) % 2;
+        for (var a = 0; a < 8; a++) {
+          var ang = a * Math.PI / 4 + (on ? Math.PI / 8 : 0);
+          for (var q = 0; q < 3; q++) box(nx + Math.cos(ang) * (nr + 3 + q), ny + Math.sin(ang) * (nr + 3 + q), 1, 1, '#ffd24d');
+        }
+        disc(nx, ny, nr, '#f5b800');
+      } else if (name === 'dusk') {
+        var dr = Math.round(rows * .17);
+        disc(cols * .85, rows * .5 + off, dr, '#ffe27a', function (dy) { return dy > 0 && dy % 4 < Math.ceil(dy / dr * 3); });
+      } else {
+        /* in the empty space beside the level, never behind the headline; the same colour as the type, so on narrow screens where text runs over it, it dims */
+        var r = Math.round(rows * .085), mx = Math.round(cols * .08), my = Math.round(rows * .6 + off);
+        ctx.fillStyle = cols < 137 ? '#6474ab' : '#f2f3ef';
+        for (var y = -r; y <= r; y++) for (var x = -r; x <= r; x++) {
+          var ox = x - r * .55, oy = y + r * .15;
+          if (x * x + y * y <= r * r && ox * ox + oy * oy > r * r * .72) ctx.fillRect(mx + x, my + y, 1, 1);
+        }
+      }
+    }
+    function scenery(name) {
+      if (name === 'morning') {
+        clouds([[.14, .16, 22, .1], [.3, .1, 16, .65]], '#fff1e4', '#f6cfae');
+        /* three birds, flapping in turn */
+        for (var i = 0; i < 3; i++) {
+          var span = cols + 20, x = ((tick * .5 + i * 7) % span) - 10, y = rows * .24 + i * 3 + (i % 2) * 2, up = (Math.floor(tick / 4) + i) % 2;
+          box(x, y + (up ? 0 : 1), 1, 1, '#121311');
+          box(x + 1, y + 1, 1, 1, '#121311');
+          box(x + 2, y + (up ? 0 : 1), 1, 1, '#121311');
+        }
+      } else if (name === 'noon') {
+        clouds([[.08, .12, 26, .05], [.26, .2, 18, .45], [.42, .08, 14, .8]], '#fbfbf7', '#cfe6f2');
+        /* someone's failed draft, folded into a plane, every so often */
+        var loop = tick % 340;
+        if (loop < 200) {
+          var px = loop * (cols + 20) / 200 - 10, py = rows * .34 - loop * .03 + Math.round(Math.sin(loop / 9) * 2);
+          box(px, py + 2, 6, 1, '#121311');
+          box(px + 3, py + 1, 3, 1, '#fbfbf7');
+          box(px + 5, py, 1, 1, '#fbfbf7');
+          box(px + 1, py + 3, 3, 1, '#9a9c95');
+        }
+      } else if (name === 'dusk') {
+        clouds([[.1, .06, 30, .2], [.3, .1, 20, .7]], '#ffc0a0', '#e0608f');
+      } else {
+        for (var s = 0; s < 90; s++) {
+          var sx = Math.floor(grit(s, 11) * cols), sy = Math.floor(grit(5, s) * rows * .6);
+          var twinkle = grit(s, Math.floor(tick / 5));
+          if (twinkle < .12) continue;
+          box(sx, sy, 1, 1, twinkle > .8 ? '#ffffff' : '#7f8ab8');
+        }
+        /* now and then, a shooting star */
+        var fall = tick % 150;
+        if (fall < 10) for (var k = 0; k < 6; k++) box(cols * .2 + fall * 3 - k, rows * .08 + fall - k * .5, 1, 1, k ? '#7f8ab8' : '#ffffff');
+      }
+    }
+    function draw() {
+      if (!cols || !now) return;
+      var to = bases[now], old = from && fade < 1 ? bases[from] : null, px = image.data, view = new Uint32Array(px.buffer);
+      for (var y = 0, i = 0; y < rows; y++) for (var x = 0; x < cols; x++, i++) {
+        /* a change of time dissolves through the same ordered dither as everything else */
+        view[i] = old && fade <= (BAYER[y % 8][x % 8] + .5) / 64 ? old[i] : to[i];
+      }
+      ctx.putImageData(image, 0, 0);
+      var eased = fade * fade * (3 - 2 * fade);
+      if (old) body(from, 1 - eased);
+      body(now, eased);
+      scenery(old && fade < .5 ? from : now);
+    }
+    function dress(name) {
+      var set = TIMES[name], root = document.documentElement.style;
+      heroTime = name;
+      root.setProperty('--hero-foot', set.bands[3]);
+      root.setProperty('--hero-ink', set.ink);
+      root.setProperty('--neg-bg', set.negBg);
+      root.setProperty('--neg-ink', set.negInk);
+      redrawLevel();
+      updateEdges(innerHeight, true);
+    }
+    function setTime(name, instant) {
+      if (name === now) return;
+      from = now;
+      now = name;
+      buttons.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.time === name ? 'true' : 'false'); });
+      notes.forEach(function (n) { n.textContent = TIMES[name].note; });
+      if (instant || reduce || !from) { fade = 1; dress(name); draw(); return; }
+      fade = 0;
+      dressed = false;
+      wake();
+    }
+    var dressed = true;
+    function clockTime() {
+      var d = new Date(), h = d.getHours() + d.getMinutes() / 60;
+      return h >= 5 && h < 11 ? 'morning' : h >= 11 && h < 15 ? 'noon' : h >= 15 && h < 18.5 ? 'dusk' : 'night';
+    }
+    function frame(time) {
+      if (reduce) return;
+      requestAnimationFrame(frame);
+      if (time - lastDraw < 66) return;
+      lastDraw = time;
+      var b = hero.getBoundingClientRect();
+      if (b.bottom < 0 || b.top > innerHeight) return;
+      if (fade < 1) {
+        fade = Math.min(1, fade + .06);
+        /* the ink turns over halfway, when most of the sky has already changed */
+        if (!dressed && fade >= .5) { dressed = true; dress(now); }
+      } else if (!dressed) { dressed = true; dress(now); }
+      tick += .5;
+      draw();
+    }
+    function wake() { if (!running && !reduce) { running = true; requestAnimationFrame(frame); } }
+    buttons.forEach(function (b) {
+      b.addEventListener('click', function () { picked = true; setTime(b.dataset.time); });
+    });
+    measure();
+    setTime(clockTime(), true);
+    wake();
+    if (window.ResizeObserver) new ResizeObserver(measure).observe(hero);
+    addEventListener('resize', measure);
+    /* the page can stay open for hours */
+    setInterval(function () { if (!picked) setTime(clockTime()); }, 60000);
+  })();
+
   /* ---------- nav ---------- */
   var navLinks = [].slice.call($('nav').querySelectorAll('a'));
   var navTargets = navLinks.map(function (a) { return document.querySelector(a.getAttribute('href')); });
@@ -1762,11 +2122,11 @@ a { color: inherit; }
   var journeyOn = false, journeyP = -1, navStatic = navTargets.slice();
   function journeyAnchor(share) {
     var a = document.createElement('span');
-    a.style.cssText = 'position:absolute;left:0;top:calc((880vh - 100vh) * ' + share + ')';
+    a.style.cssText = 'position:absolute;left:0;top:calc((930vh - 100vh) * ' + share + ')';
     return a;
   }
   /* the journey's timetable, in vh of scrolling; .track is this total plus one screen */
-  var J = { steps: 420, shred: 450, found: 540, fold: 610, asked: 720, total: 780 };
+  var J = { steps: 420, bite: 450, found: 590, fold: 660, asked: 770, total: 830 };
   var stepsAnchor = journeyAnchor(84 / J.total), lostAnchor = journeyAnchor(J.steps / J.total);
   var foundAnchor = journeyAnchor(J.found / J.total), askedAnchor = journeyAnchor(J.asked / J.total);
   var stuckAnchor = document.createElement('span');
@@ -1871,8 +2231,8 @@ a { color: inherit; }
     if (bob) paint([WALK_POSES[pose[0]][5]], top + WALK_HEAD.length + 5);
     paint(WALK_LEGS[pose[1]], top + WALK_HEAD.length + 6);
   }
-  /* ---------- the kraft and white sheets: a shredder in, then a fold out ---------- */
-  var foundPanel = $('foundPanel'), counterPanel = $('counterPanel'), shredEl = $('shred'), foldEl = $('fold'), foldLeaf = $('foldLeaf'), foldShade = $('foldShade'), foldBackShade = $('foldBackShade');
+  /* ---------- the kraft and white sheets: a bite in, then a fold out ---------- */
+  var foundPanel = $('foundPanel'), counterPanel = $('counterPanel'), biteCv = $('bite'), foldCv = $('fold');
   var SPRITE_COLOR = { T: '#121311', W: '#fbfbf7', G: '#9a9c95', S: '#f0b183', K: '#ff6ba9', B: '#8ccbf0', Y: '#f5b800', N: '#3f7d4e', R: '#d8423a' };
   var SPRITES = {
     key: ['..TTTTT.........', '.TYYYYYT........', 'TYYTTTYYT.......', 'TYT...TYTTTTTTTT', 'TYT...TYYYYYYYYT', 'TYT...TYTTTTYTYT', 'TYYTTTYYT...T.T.', '.TYYYYYT........', '..TTTTT.........'],
@@ -1934,6 +2294,57 @@ a { color: inherit; }
     var url = 'url(' + cv.toDataURL() + ')';
     [].forEach.call(document.querySelectorAll('.glass'), function (g) { g.style.backgroundImage = url; });
   })();
+  /* the inventory: choosing a slot prints that item into the big window, and moving across the window runs it back through the copier */
+  (function () {
+    var slots = [].slice.call($('foundSlots').querySelectorAll('.slot')), view = $('caseView'), sprite = $('caseSprite');
+    var pips = [].slice.call($('casePips').children), name = '', shown = 0, timer = 0, chosen = -1;
+    function show(g) {
+      shown = g;
+      sprite.src = spriteCopy(name, g).url;
+      pips.forEach(function (p, i) { p.classList.toggle('on', i <= g); });
+      $('caseCopy').textContent = ORDINAL[g];
+    }
+    /* walks back to the original one generation at a time */
+    function heal() {
+      clearInterval(timer); timer = 0;
+      if (reduce) { show(0); return; }
+      if (!shown) return;
+      timer = setInterval(function () {
+        show(shown - 1);
+        if (!shown) { clearInterval(timer); timer = 0; }
+      }, 50);
+    }
+    function choose(i, instant) {
+      if (i === chosen) return;
+      chosen = i;
+      var s = slots[i];
+      slots.forEach(function (o, n) { o.setAttribute('aria-pressed', n === i ? 'true' : 'false'); });
+      name = s.querySelector('img').dataset.sprite;
+      sprite.style.setProperty('--w', spriteCopy(name, 0).w);
+      $('caseIndex').textContent = i + 1;
+      $('caseName').textContent = s.dataset.name;
+      $('caseWhere').textContent = s.dataset.where;
+      clearInterval(timer); timer = 0;
+      if (instant || reduce) { show(0); return; }
+      show(6);
+      heal();
+    }
+    slots.forEach(function (s, i) {
+      s.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') choose(i); });
+      s.addEventListener('focus', function () { choose(i); });
+      s.addEventListener('click', function () { choose(i); });
+    });
+    function scrub(e) {
+      clearInterval(timer); timer = 0;
+      var b = view.getBoundingClientRect(), g = Math.max(0, Math.min(6, Math.floor((e.clientX - b.left) / b.width * 7)));
+      if (g !== shown) show(g);
+    }
+    view.addEventListener('pointermove', scrub);
+    view.addEventListener('pointerdown', scrub);
+    view.addEventListener('pointerleave', heal);
+    view.addEventListener('pointerup', function (e) { if (e.pointerType !== 'mouse') heal(); });
+    choose(0, true);
+  })();
   function wearLetters(id) {
     var el = $(id);
     el.setAttribute('aria-label', el.textContent);
@@ -1951,19 +2362,7 @@ a { color: inherit; }
     });
   }
   var foundLetters = wearLetters('foundTitle'), counterLetters = wearLetters('counterTitle');
-  /* a stand-in for a live sheet: same type at its sharpest, no ids */
-  function faceOf(sheet) {
-    var face = sheet.cloneNode(true);
-    face.removeAttribute('id');
-    face.removeAttribute('style');
-    [].forEach.call(face.querySelectorAll('[id]'), function (el) { el.removeAttribute('id'); });
-    [].forEach.call(face.querySelectorAll('.edge, .lost-dots'), function (el) { el.remove(); });
-    [].forEach.call(face.querySelectorAll('h2 span'), function (el) { setCut(el, 0); });
-    return face;
-  }
-  $('foldFront').insertBefore(faceOf(foundPanel), foldShade);
-  $('foldBack').insertBefore(faceOf(counterPanel), foldBackShade);
-  /* the clerk, facing the questions; the fold's back carries one too so nobody pops in when it lands */
+  /* the clerk, facing the questions */
   var CLERK_W = 32, CLERK_H = 26;
   function drawClerk(open, hop) {
     [].forEach.call(document.querySelectorAll('.clerk'), function (cv) {
@@ -1994,51 +2393,266 @@ a { color: inherit; }
     });
   }
   drawClerk(false, false);
-  var strips = [], shredW = 0;
-  function buildShred() {
-    var w = innerWidth;
-    if (w === shredW) return;
-    shredW = w;
-    shredEl.textContent = '';
-    var n = Math.max(8, Math.round(w / 96)), size = Math.ceil(w / n);
-    strips = [];
+  /* the bite: two small mouthfuls from the sides leave tooth marks in the black page, then one mouth the size of the screen takes the rest */
+  var TOOTH = ['WWWWWWS.', 'WHHWWWS.', 'WHWWWWS.', 'WWWWWWS.', 'WWWWWWS.', 'WWWWWWS.', 'WWWWWWS.', 'WWWWWWS.', 'WWWWWSS.', '.SSSSS..'];
+  var TOOTH_INK = { W: '#f2f3ef', H: '#ffffff', S: '#c4c6bd', '.': '#121311' };
+  var TOOTH_W = TOOTH[0].length, TOOTH_L = TOOTH.length, BITE_MARK = [1, 3, 4, 4, 4, 4, 3, 1], GUM = 6, GUM_CORNER = 5;
+  /* when each small mouth comes and goes, and the big one's beats; all as shares of the scroll */
+  var SMALL_BITES = [[0, .24], [.24, .48]], SHUT = .62, BIG = { enter: .48, wide: .6, snap: .66, shut: .72, open: .78 };
+  var biteCell = 0, biteCols = 0, biteRows = 0, biteW = 0, biteH = 0, mouths = [], biteClips = [], biteKey = -1;
+  function gumCorner(fromTip) {
+    return fromTip < GUM_CORNER ? Math.round(GUM_CORNER - Math.sqrt(GUM_CORNER * GUM_CORNER - Math.pow(GUM_CORNER - fromTip, 2))) : 0;
+  }
+  /* a crumb is fixed by its seed, so scrolling back runs it in reverse */
+  function makeCrumbs(n, x0, x1, y) {
+    var out = [], tones = ['#f2f3ef', '#a9aba4', '#121311'];
     for (var i = 0; i < n; i++) {
-      var strip = document.createElement('div'), face = faceOf(lostPanel);
-      strip.className = 'shred-strip';
-      strip.style.left = i * size + 'px';
-      strip.style.width = size + 'px';
-      face.style.left = -i * size + 'px';
-      face.style.width = w + 'px';
-      strip.appendChild(face);
-      shredEl.appendChild(strip);
-      /* the middle goes first and the tear runs out to both sides; neighbours pull opposite ways */
-      strips.push({ el: strip, dir: i % 2 ? -1 : 1, delay: Math.abs(i - (n - 1) / 2) / ((n - 1) / 2) * .4, y: null });
+      var a = (i * 7919 % 101) / 101, b = (i * 104729 % 97) / 97, c = (i * 1299709 % 89) / 89;
+      out.push({ x: x0 + (x1 - x0) * a, y: y, vx: (a - .5) * 24, vy: -(4 + b * 12), size: c > .7 ? 2 : 1, tone: tones[i % 3] });
+    }
+    return out;
+  }
+  function measureBite() {
+    var w = lostPanel.clientWidth, h = lostPanel.clientHeight;
+    if (w === biteW && h === biteH) return;
+    biteW = w; biteH = h;
+    /* the cell scales with the window in whole steps of 4px, so the page's dots and the teeth share a pixel grid */
+    biteCell = Math.max(8, Math.round(Math.min(h, w * .6) / 68 / 4) * 4);
+    biteCols = Math.ceil(w / biteCell);
+    biteRows = Math.ceil(h / biteCell);
+    biteCv.width = biteCols;
+    biteCv.height = biteRows;
+    biteCv.style.width = biteCols * biteCell + 'px';
+    biteCv.style.height = biteRows * biteCell + 'px';
+    var teeth = Math.max(3, Math.round(biteCols * .34 / TOOTH_W)), span = teeth * TOOTH_W;
+    mouths = [
+      { side: 1, teeth: teeth, span: span, cx: biteCols - span, cy: Math.round(biteRows * .26) },
+      { side: -1, teeth: teeth, span: span, cx: 0, cy: Math.round(biteRows * .76) }
+    ];
+    mouths.forEach(function (m) { m.crumbs = makeCrumbs(16, m.side > 0 ? m.cx : m.span - 8, m.side > 0 ? m.cx + 8 : m.span, m.cy); });
+    mouths.big = makeCrumbs(44, 0, biteCols, Math.floor(biteRows / 2));
+    /* the page with 0, 1 and 2 mouthfuls gone, as whole-cell spans */
+    biteClips = [null, biteClip(1), biteClip(2)];
+    biteKey = -1;
+  }
+  function bitten(m, c, r) {
+    var x = c - m.cx;
+    if (x < 0 || x >= m.span) return false;
+    var depth = TOOTH_L + BITE_MARK[x % TOOTH_W] - gumCorner(m.side > 0 ? x : m.span - 1 - x);
+    return r >= m.cy - depth && r < m.cy + depth;
+  }
+  function biteClip(count) {
+    var d = '';
+    for (var r = 0; r < biteRows; r++) {
+      var start = null;
+      for (var c = 0; c <= biteCols; c++) {
+        var on = c < biteCols;
+        for (var i = 0; on && i < count; i++) if (bitten(mouths[i], c, r)) on = false;
+        if (on && start === null) start = c;
+        if (!on && start !== null) {
+          d += 'M' + start * biteCell + ' ' + r * biteCell + 'h' + (c - start) * biteCell + 'v' + biteCell + 'h' + (start - c) * biteCell + 'Z';
+          start = null;
+        }
+      }
+    }
+    return 'path("' + d + '")';
+  }
+  /* one jaw: dir -1 hangs from above, dir 1 stands up from below; tip is the row its teeth end on */
+  function drawJaw(ctx, x0, teeth, k, tip, dir, gum, rounded) {
+    var len = TOOTH_L * k, root = dir < 0 ? tip - len : tip + len;
+    for (var x = 0; x < teeth * TOOTH_W * k; x++) {
+      var corner = rounded ? gumCorner(rounded > 0 ? x : teeth * TOOTH_W * k - 1 - x) : 0;
+      var h = gum - corner;
+      ctx.fillStyle = '#121311';
+      ctx.fillRect(x0 + x, dir < 0 ? root - h - 1 : root, 1, h + 1);
+      ctx.fillStyle = '#ff6ba9';
+      ctx.fillRect(x0 + x, dir < 0 ? root - h : root, 1, h);
+    }
+    ctx.fillStyle = '#d9487f';
+    ctx.fillRect(x0, dir < 0 ? root - k : root, teeth * TOOTH_W * k, k);
+    for (var i = 0; i < teeth; i++) {
+      var tx = x0 + i * TOOTH_W * k;
+      ctx.fillStyle = '#ff9cc6';
+      ctx.fillRect(tx + 2 * k, dir < 0 ? root - 3 * k : root + 2 * k, 3 * k, k);
+      for (var ry = 0; ry < TOOTH_L; ry++) for (var rx = 0; rx < TOOTH_W; rx++) {
+        ctx.fillStyle = TOOTH_INK[TOOTH[ry][rx]];
+        ctx.fillRect(tx + rx * k, dir < 0 ? tip - (TOOTH_L - ry) * k : tip + (TOOTH_L - 1 - ry) * k, k, k);
+      }
     }
   }
-  function updateLater(at, hole, vh) {
-    var s = Math.min(1, Math.max(0, (at - J.shred) / (J.found - J.shred)));
-    var f = Math.min(1, Math.max(0, (at - J.fold) / (J.asked - J.fold)));
-    panel.style.visibility = hole >= 1 ? 'hidden' : '';
-    if (hole >= 1) lostPanel.style.visibility = s > 0 ? 'hidden' : 'visible';
-    shredEl.style.visibility = s > 0 && s < 1 ? 'visible' : 'hidden';
-    foundPanel.style.visibility = s > 0 && f < 1 ? 'visible' : 'hidden';
-    counterPanel.style.visibility = f > 0 ? 'visible' : 'hidden';
-    if (s > 0 && s < 1) strips.forEach(function (st) {
-      var local = Math.min(1, Math.max(0, (s - st.delay) / .6));
-      var y = Math.round(local * local * (vh + 16) / 16) * 16 * st.dir;
-      if (y !== st.y) { st.y = y; st.el.style.transform = 'translateY(' + y + 'px)'; }
+  function drawCrumbs(ctx, crumbs, t) {
+    if (t <= 0 || t >= 1) return;
+    crumbs.forEach(function (b) {
+      ctx.fillStyle = b.tone;
+      ctx.fillRect(Math.round(b.x + b.vx * t), Math.round(b.y + b.vy * t + biteRows * 1.3 * t * t), b.size, b.size);
     });
-    printLetters(foundLetters, s);
-    printLetters(counterLetters, f);
-    /* flat at both ends, so the back lands exactly where the white page's bottom half belongs and the swap can't be seen */
-    foldEl.style.visibility = f > 0 && f < 1 ? 'visible' : 'hidden';
-    foundPanel.style.clipPath = f > 0 ? 'inset(50% 0 0 0)' : '';
-    if (f > 0 && f < 1) {
-      var turn = smooth(f), shade = Math.sin(turn * Math.PI) * .4;
-      foldLeaf.style.transform = 'rotateX(' + -180 * turn + 'deg)';
-      foldShade.style.opacity = shade;
-      foldBackShade.style.opacity = shade;
+  }
+  function drawBite(s) {
+    var ctx = biteCv.getContext('2d');
+    ctx.clearRect(0, 0, biteCols, biteRows);
+    SMALL_BITES.forEach(function (range, i) {
+      var m = mouths[i], t = (s - range[0]) / (range[1] - range[0]);
+      drawCrumbs(ctx, m.crumbs, (t - SHUT) / .7);
+      if (t <= 0 || t >= 1) return;
+      /* in from the edge, jaws wide; a beat; shut; carry the mouthful back out with the teeth clenched */
+      var come = Math.min(1, t / .34), go = Math.max(0, (t - .72) / .28);
+      var out = (1 - come) * (2 - come) / 2 + go * go;
+      var off = Math.round(out * (m.span + 2)) * m.side;
+      var gap = Math.round(7 * (1 - Math.min(1, Math.max(0, (t - .48) / (SHUT - .48)))));
+      drawJaw(ctx, m.cx + off, m.teeth, 1, m.cy - gap, -1, GUM, m.side);
+      drawJaw(ctx, m.cx + off, m.teeth, 1, m.cy + gap, 1, GUM, m.side);
+    });
+    drawCrumbs(ctx, mouths.big, (s - BIG.shut) / (1 - BIG.shut));
+    if (s > BIG.enter) {
+      var mid = Math.floor(biteRows / 2), away = mid + 2, wide = Math.max(6, mid - 24), open;
+      if (s < BIG.wide) { var e = (s - BIG.enter) / (BIG.wide - BIG.enter); open = away + (wide - away) * (1 - (1 - e) * (1 - e)); }
+      else if (s < BIG.snap) open = wide;
+      else if (s < BIG.shut) { var n = (s - BIG.snap) / (BIG.shut - BIG.snap); open = wide * (1 - n * n); }
+      else if (s < BIG.open) open = 0;
+      else { var u = (s - BIG.open) / (1 - BIG.open); open = away * u * u * (3 - 2 * u); }
+      open = Math.round(open);
+      var teeth = Math.ceil(biteCols / (TOOTH_W * 2)) + 1, x0 = Math.floor((biteCols - teeth * TOOTH_W * 2) / 2);
+      drawJaw(ctx, x0, teeth, 2, mid - open, -1, biteRows, 0);
+      drawJaw(ctx, x0, teeth, 2, mid + open, 1, biteRows, 0);
     }
+  }
+  /* the fold: both faces are painted once from the live sheets, then every row of the leaf is drawn on its own in fat pixels, with its own perspective */
+  var FOLD_DEPTH = 1800, FOLD_FRAMES = 28, foldFaces = null, foldCell = 0, foldShades = null;
+  function paintFace(sheet) {
+    var box = sheet.getBoundingClientRect(), cv = document.createElement('canvas'), ctx = cv.getContext('2d');
+    cv.width = Math.ceil(box.width);
+    cv.height = Math.ceil(box.height);
+    ctx.fillStyle = getComputedStyle(sheet).backgroundColor;
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.imageSmoothingEnabled = false;
+    function bubble(el) {
+      /* the same stepped speech bubble the CSS cuts out of a pseudo-element */
+      var r = el.getBoundingClientRect(), p = parseFloat(getComputedStyle(el).getPropertyValue('--p')) || 6, x = r.left - box.left, y = r.top - box.top;
+      ctx.fillStyle = '#121311';
+      ctx.fillRect(x + 2 * p, y, r.width - 4 * p, r.height);
+      ctx.fillRect(x + p, y + p, r.width - 2 * p, r.height - 2 * p);
+      ctx.fillRect(x, y + 2 * p, r.width, r.height - 4 * p);
+      ctx.fillRect(x + 3 * p, y + r.height, 3 * p, p);
+      ctx.fillRect(x + 3 * p, y + r.height + p, 2 * p, p);
+      ctx.fillRect(x + 3 * p, y + r.height + 2 * p, p, p);
+    }
+    function words(node) {
+      var parent = node.parentElement, cs = getComputedStyle(parent), text = node.nodeValue, range = document.createRange();
+      var family = parent.closest('h2') ? '"Redaction", serif' : cs.fontFamily;
+      ctx.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + family;
+      if ('letterSpacing' in ctx) ctx.letterSpacing = cs.letterSpacing === 'normal' ? '0px' : cs.letterSpacing;
+      ctx.fillStyle = cs.color;
+      ctx.textBaseline = 'alphabetic';
+      var ascent = ctx.measureText('x').fontBoundingBoxAscent;
+      /* split at the line breaks the browser chose */
+      var line = '', left = 0, top = null;
+      function flush() { if (line.trim()) ctx.fillText(line, left - box.left, top - box.top + ascent); line = ''; }
+      for (var i = 0; i < text.length; i++) {
+        range.setStart(node, i);
+        range.setEnd(node, i + 1);
+        var r = range.getClientRects()[0];
+        if (!r) continue;
+        if (top === null || Math.abs(r.top - top) > 2) { flush(); left = r.left; top = r.top; }
+        line += text[i];
+      }
+      flush();
+    }
+    (function walk(el) {
+      var cs = getComputedStyle(el), r = el.getBoundingClientRect();
+      if (el.classList.contains('edge') || el.classList.contains('lost-dots') || el.classList.contains('sr-only')) return;
+      if (el.tagName === 'IMG' || el.tagName === 'CANVAS') {
+        if (r.width && (el.tagName === 'CANVAS' || el.complete)) ctx.drawImage(el, r.left - box.left, r.top - box.top, r.width, r.height);
+        return;
+      }
+      if (el !== sheet) {
+        if (cs.backgroundColor !== 'rgba(0, 0, 0, 0)') { ctx.fillStyle = cs.backgroundColor; ctx.fillRect(r.left - box.left, r.top - box.top, r.width, r.height); }
+        var bw = parseFloat(cs.borderTopWidth);
+        if (bw && cs.borderTopStyle !== 'none') {
+          ctx.strokeStyle = cs.borderTopColor;
+          ctx.lineWidth = bw;
+          ctx.strokeRect(r.left - box.left + bw / 2, r.top - box.top + bw / 2, r.width - bw, r.height - bw);
+        }
+        if (el.tagName === 'DT' && el.closest('.asks')) bubble(el);
+      }
+      [].forEach.call(el.childNodes, function (c) {
+        if (c.nodeType === 1) walk(c);
+        else if (c.nodeType === 3 && c.nodeValue.trim()) words(c);
+      });
+    })(sheet);
+    return cv;
+  }
+  function makeFoldShades(ctx, ink) {
+    /* a darker tone of the paper through the Bayer matrix, in sixteen strengths, instead of a smooth shadow */
+    var out = [null];
+    for (var n = 1; n <= 16; n++) {
+      var tile = document.createElement('canvas'), tc = tile.getContext('2d');
+      tile.width = tile.height = 8;
+      tc.fillStyle = ink;
+      for (var y = 0; y < 8; y++) for (var x = 0; x < 8; x++) if (BAYER[y][x] < n * 4) tc.fillRect(x, y, 1, 1);
+      out.push(ctx.createPattern(tile, 'repeat'));
+    }
+    return out;
+  }
+  function drawFold(turn) {
+    var w = foundPanel.clientWidth, h = foundPanel.clientHeight, H = h / 2;
+    if (!foldFaces) foldFaces = [paintFace(foundPanel), paintFace(counterPanel)];
+    var angle = turn * Math.PI, sin = Math.sin(angle), cos = Math.cos(angle), face = foldFaces[cos > 0 ? 0 : 1];
+    /* sharp as it lifts, coarsest while it stands up, sharp again as it lands */
+    var cell = Math.max(4, Math.round(biteCell * Math.min(1, sin * 2.5) / 4) * 4);
+    var cols = Math.ceil(w / cell), rows = Math.ceil(h / cell), ctx = foldCv.getContext('2d');
+    if (cell !== foldCell) {
+      foldCell = cell;
+      foldCv.width = cols;
+      foldCv.height = rows;
+      foldCv.style.width = cols * cell + 'px';
+      foldCv.style.height = rows * cell + 'px';
+      foldShades = null;
+    }
+    if (!foldShades) foldShades = [makeFoldShades(ctx, '#7f6648'), makeFoldShades(ctx, '#b4b6ad')];
+    ctx.clearRect(0, 0, cols, rows);
+    ctx.imageSmoothingEnabled = false;
+    var edge = null, edgeV = -1;
+    for (var row = 0; row < rows; row++) {
+      /* which part of the leaf this screen row sees, undoing the perspective */
+      var a = (row + .5) * cell - H, below = H * (a * sin - FOLD_DEPTH * cos);
+      if (!below) continue;
+      var v = a * FOLD_DEPTH / below;
+      if (v < 0 || v > 1) continue;
+      var grow = FOLD_DEPTH / (FOLD_DEPTH - H * v * sin), dw = Math.round(w * grow / cell), dx = Math.round((cols - dw) / 2);
+      var sy = Math.floor(cos > 0 ? H - H * v : H + H * v);
+      ctx.drawImage(face, 0, Math.min(h - 1, sy), w, 1, dx, row, dw, 1);
+      /* darker towards the crease */
+      var shade = Math.round(sin * (.3 + .45 * (1 - v)) * 16);
+      if (shade > 0) { ctx.fillStyle = foldShades[cos > 0 ? 0 : 1][Math.min(16, shade)]; ctx.fillRect(dx, row, dw, 1); }
+      if (v > edgeV) { edgeV = v; edge = [dx, row, dw]; }
+    }
+    /* one row of ink along the free edge lets it read against the page behind */
+    if (edge && sin > .12) { ctx.fillStyle = '#121311'; ctx.fillRect(edge[0], edge[1], edge[2], 1); }
+  }
+  function updateLater(at, hole, vh) {
+    var s = Math.min(1, Math.max(0, (at - J.bite) / (J.found - J.bite)));
+    var f = Math.min(1, Math.max(0, (at - J.fold) / (J.asked - J.fold)));
+    /* the turn moves in whole frames, like a sprite; at either end the real page is showing */
+    var turn = Math.round(smooth(f) * FOLD_FRAMES) / FOLD_FRAMES;
+    panel.style.visibility = hole >= 1 ? 'hidden' : '';
+    /* a mouthful leaves the page at the moment the jaws shut over it, so the swap can't be seen */
+    var eaten = s >= BIG.shut ? 3 : s >= SMALL_BITES[1][0] + SHUT * (SMALL_BITES[1][1] - SMALL_BITES[1][0]) ? 2 : s >= SMALL_BITES[0][0] + SHUT * (SMALL_BITES[0][1] - SMALL_BITES[0][0]) ? 1 : 0;
+    var key = hole >= 1 ? eaten : -1;
+    if (hole >= 1) lostPanel.style.visibility = eaten === 3 ? 'hidden' : 'visible';
+    if (key !== biteKey) {
+      biteKey = key;
+      if (key >= 0) lostPanel.style.clipPath = biteClips[key] || 'none';
+    }
+    biteCv.style.visibility = s > 0 && s < 1 ? 'visible' : 'hidden';
+    foundPanel.style.visibility = s > 0 && turn < 1 ? 'visible' : 'hidden';
+    counterPanel.style.visibility = turn > 0 ? 'visible' : 'hidden';
+    if (s > 0 && s < 1) drawBite(s);
+    /* the kraft headline finishes printing as the big mouth opens on it */
+    printLetters(foundLetters, Math.max(0, (s - BIG.shut) / (1 - BIG.shut)));
+    printLetters(counterLetters, f);
+    foldCv.style.visibility = turn > 0 && turn < 1 ? 'visible' : 'hidden';
+    foundPanel.style.clipPath = turn > 0 ? 'inset(50% 0 0 0)' : '';
+    if (turn > 0 && turn < 1) drawFold(turn);
   }
   function measureJourney() {
     if (!journeyOn) return;
@@ -2047,7 +2661,8 @@ a { color: inherit; }
     stuckEl.style.setProperty('--zone-stick', Math.min(0, innerHeight - stuckEl.offsetHeight) + 'px');
     drawEdgeV(0);
     measureWalker();
-    buildShred();
+    measureBite();
+    foldFaces = null;
   }
   function setupJourney() {
     journeyOn = !reduce && journeyMq.matches;
@@ -2076,6 +2691,7 @@ a { color: inherit; }
     navTargets[foundI] = navStatic[foundI];
     navTargets[askedI] = navStatic[askedI];
     holeStep = -1;
+    biteKey = -1;
     [stuckEl, panel, panelInner, stepsRow, lostPanel, foundPanel, counterPanel].forEach(function (el) { el.style.transform = ''; el.style.clipPath = ''; el.style.visibility = ''; });
     stepTitles.forEach(function (t) { t.cut = 0; setCut(t.el, 0); });
     lostLetters.concat(foundLetters, counterLetters).forEach(function (l) { l.cut = 0; setCut(l.el, 0); });
@@ -2193,8 +2809,7 @@ a { color: inherit; }
     var cutsReady = !document.fonts;
     if (document.fonts) Promise.all(['10', '20', '35', '50', '70', '100'].map(function (n) { return document.fonts.load('400 1em "Redaction ' + n + '"'); })).then(function () { cutsReady = true; }, function () {});
     [].forEach.call(document.querySelectorAll('h2, .steps-row h3'), function (h) {
-      if (h.closest('.shred, .fold')) return;
-      var els = [].filter.call(h.querySelectorAll('span'), function (el) { return !el.children.length && !el.classList.contains('sr-only'); });
+            var els = [].filter.call(h.querySelectorAll('span'), function (el) { return !el.children.length && !el.classList.contains('sr-only'); });
       if (!els.length) {
         h.setAttribute('aria-label', h.textContent);
         els = splitLetters(h);
@@ -2302,32 +2917,6 @@ a { color: inherit; }
       if (inside) { dotPointer = { x: e.clientX - r.left, y: e.clientY - r.top }; kickDots(); }
       else if (dotPointer) { dotPointer = null; kickDots(); }
     }, { passive: true });
-
-    /* brown sheet: across a pane is seven trips through the copier, and the caption keeps count */
-    [].forEach.call(foundPanel.querySelectorAll('.found-list li'), function (li) {
-      var img = li.querySelector('.found-sprite'), label = li.querySelector('.label'), glass = li.querySelector('.glass'), rest = label.textContent;
-      var name = img.dataset.sprite, shown = 0, timer = 0;
-      function show(g) {
-        shown = g;
-        img.src = spriteCopy(name, g).url;
-        label.textContent = g ? ORDINAL[g] : (li.classList.contains('copying') ? ORDINAL[0] : rest);
-      }
-      li.addEventListener('pointermove', function (e) {
-        clearInterval(timer); timer = 0;
-        li.classList.add('copying');
-        var b = glass.getBoundingClientRect(), g = Math.max(0, Math.min(6, Math.floor((e.clientX - b.left) / b.width * 7)));
-        if (g !== shown || !shown) show(g);
-      });
-      li.addEventListener('pointerleave', function () {
-        li.classList.remove('copying');
-        /* it recovers one generation at a time */
-        timer = setInterval(function () {
-          show(Math.max(0, shown - 1));
-          if (!shown) { clearInterval(timer); timer = 0; }
-        }, 60);
-        if (!shown) { clearInterval(timer); timer = 0; show(0); }
-      });
-    });
 
     /* white sheet: a question hops up and the clerk says the answer again, letter by letter, in space already held so nothing reflows */
     var talkTimer = 0, talking = null, mouth = false;
