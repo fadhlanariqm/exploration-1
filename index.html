@@ -14,7 +14,9 @@
 :root {
   --paper: #f2f3ef;
   --hero-foot: #f2f3ef;
-  --hero-ink: #121311;
+  --hero-ink: #07223d;
+  --hero-top: #56aee8; /* the sky's top band */
+  --hero-shade: #bfe3f5; /* a lighter band, for the hard shadow under the hero menu */
   --neg-bg: #121311;
   --neg-ink: #f2f3ef;
   --toner: #121311;
@@ -77,9 +79,10 @@ a { color: inherit; }
   left: 0;
   right: 0;
   display: flex;
-  background: var(--paper);
-  color: var(--toner);
-  border-bottom: 2px solid var(--toner);
+  background: var(--nav-bg, var(--paper));
+  color: var(--nav-fg, var(--toner));
+  border-bottom: 2px solid var(--nav-fg, var(--toner));
+  transition: background-color .3s, color .3s, border-color .3s;
   overflow: hidden;
   font-family: var(--sans);
   font-size: 1rem;
@@ -91,10 +94,232 @@ a { color: inherit; }
   text-decoration: none;
 }
 .nav a:first-of-type { padding-left: var(--gut); }
+/* On wider screens the strip leaves the screen at the end of a section and comes back somewhere else in that section's colours; the hide-* classes park it off screen on one side */
+@media (min-width: 761px) {
+  .nav {
+    --nav-h: 44px;
+    --nav-w: min(100vw, max(62vw, 760px));
+    --nav-x: 0px;
+    --nav-y: 0px;
+    right: auto;
+    left: 0;
+    width: var(--nav-w);
+    --nav-ox: 0px;
+    --nav-oy: 0px;
+    transform: translate(calc(var(--nav-x) + var(--nav-ox)), calc(var(--nav-y) + var(--nav-oy)));
+    border: 0;
+    overflow: visible;
+    transition: transform .6s var(--ease), background-color .3s, color .3s, border-color .3s;
+  }
+  /* an 8-bit frame like the Lost sheet: a solid row of 4px pixels, then a dithered row that breaks up into the section.
+     Sides against the edge of the screen fall off it, so only the inner edges show */
+  .nav::before, .nav::after { content: ""; position: absolute; pointer-events: none; }
+  .nav::before { inset: -4px; border: 4px solid var(--nav-fg, var(--toner)); }
+  .nav::after {
+    inset: -12px;
+    padding: 8px;
+    background: repeating-conic-gradient(var(--nav-fg, var(--toner)) 0 25%, transparent 0 50%) 0 0 / 8px 8px;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  }
+  .nav[data-bare]::before, .nav[data-bare]::after { display: none; }
+  /* standing rails: the labels turn on their side and stack down the full height of the screen */
+  /* over the hero the menu is only as wide as its words and sits centred, like the rest of the title screen */
+  .nav[data-pos="hero"] { width: max-content; left: 50%; --nav-x: -50%; --nav-y: 8px; }
+  .nav[data-pos="hero"] a, .nav[data-pos="hero"] a:first-of-type { flex: 0 0 auto; padding: 12px 18px 12px 26px; }
+  .nav[data-pos^="rail"] { --nav-w: 40px; height: 100vh; flex-direction: column; }
+  .nav[data-pos="rail-right"] { --nav-x: calc(100vw - var(--nav-w)); }
+  .nav[data-pos^="rail"] a, .nav[data-pos^="rail"] a:first-of-type {
+    flex: 1 1 auto;
+    padding: 8px 0;
+    writing-mode: vertical-rl;
+    text-align: center;
+    font-size: 1rem;
+    line-height: var(--nav-w); /* the one line fills the rail's width, so the word sits on its centre */
+  }
+  /* on the left rail the words read bottom to top, so they face into the page */
+  .nav[data-pos="rail-left"] a { transform: rotate(180deg); }
+  .nav[data-pos^="rail"] .nav-bar { top: 0; bottom: auto; left: 0; right: 0; width: auto; height: 1px; transform-origin: 50% 0; }
+  /* compact strips, only as wide as their links, floating in from a corner */
+  .nav[data-pos^="chip"] { --nav-w: 100vw; --nav-y: 16px; width: max-content; }
+  .nav[data-pos="chip-left"] { --nav-x: var(--gut); }
+  .nav[data-pos="chip-right"] { left: 100%; --nav-x: calc(-100% - var(--gut)); }
+  .nav[data-pos^="chip"] a, .nav[data-pos^="chip"] a:first-of-type { flex: 0 0 auto; padding: 10px 14px; }
+
+  /* ---- each section dresses the strip in its own parts ---- */
+  /* the looks below draw their own shapes, so they drop the pixel frame and the paper behind the links */
+  .nav[data-look="card"], .nav[data-look="stairs"], .nav[data-look="slots"], .nav[data-look="bubbles"] { background: transparent; }
+  .nav[data-look="stairs"]::before, .nav[data-look="stairs"]::after,
+  .nav[data-look="slots"]::before, .nav[data-look="slots"]::after,
+  .nav[data-look="bubbles"]::before, .nav[data-look="bubbles"]::after { content: none; }
+  .nav[data-look="stairs"] .nav-bar, .nav[data-look="slots"] .nav-bar, .nav[data-look="bubbles"] .nav-bar { display: none; }
+
+  /* Generations: one more recipe card on the pile, with the same two-step corners and solid 8px shadow */
+  .nav[data-look="card"] { --p: 8px; padding: 8px 12px; }
+  .nav[data-look="card"]::before, .nav[data-look="card"]::after {
+    inset: 0;
+    border: 0;
+    padding: 0;
+    -webkit-mask: none;
+    mask: none;
+    clip-path: polygon(
+      calc(var(--p) * 2) 0, calc(100% - var(--p) * 2) 0, calc(100% - var(--p) * 2) var(--p), calc(100% - var(--p)) var(--p),
+      calc(100% - var(--p)) calc(var(--p) * 2), 100% calc(var(--p) * 2), 100% calc(100% - var(--p) * 2), calc(100% - var(--p)) calc(100% - var(--p) * 2),
+      calc(100% - var(--p)) calc(100% - var(--p)), calc(100% - var(--p) * 2) calc(100% - var(--p)), calc(100% - var(--p) * 2) 100%, calc(var(--p) * 2) 100%,
+      calc(var(--p) * 2) calc(100% - var(--p)), var(--p) calc(100% - var(--p)), var(--p) calc(100% - var(--p) * 2), 0 calc(100% - var(--p) * 2),
+      0 calc(var(--p) * 2), var(--p) calc(var(--p) * 2), var(--p) var(--p), calc(var(--p) * 2) var(--p)
+    );
+  }
+  .nav[data-look="card"]::before { z-index: -2; background: var(--toner); transform: translate(8px, 8px); }
+  .nav[data-look="card"]::after { z-index: -1; background: var(--paper); }
+  .nav[data-look="card"] .nav-bar { top: 8px; bottom: 8px; }
+
+  /* Steps: the links are a flight of sky-blue steps, each one a little lower than the last */
+  .nav[data-look="stairs"] { align-items: flex-start; }
+  .nav[data-look="stairs"] a, .nav[data-look="stairs"] a:first-of-type {
+    margin-left: -4px;
+    background: var(--sky);
+    border: 4px solid var(--toner);
+    transition: background-color .12s steps(2), color .12s steps(2);
+  }
+  .nav[data-look="stairs"] a:first-of-type { margin-left: 0; }
+  .nav[data-look="stairs"] a:nth-of-type(2) { margin-top: 6px; }
+  .nav[data-look="stairs"] a:nth-of-type(3) { margin-top: 12px; }
+  .nav[data-look="stairs"] a:nth-of-type(4) { margin-top: 18px; }
+  .nav[data-look="stairs"] a:nth-of-type(5) { margin-top: 24px; }
+  .nav[data-look="stairs"] a:nth-of-type(6) { margin-top: 30px; }
+  .nav[data-look="stairs"] a:nth-of-type(7) { margin-top: 36px; }
+  .nav[data-look="stairs"] a:nth-of-type(8) { margin-top: 42px; }
+  .nav[data-look="stairs"] a:hover, .nav[data-look="stairs"] a:focus-visible, .nav[data-look="stairs"] a[aria-current] { background: var(--toner); color: var(--sky); }
+
+  /* Lost: the black sheet's grid of pixel dots runs through the strip too */
+  .nav[data-look="dots"] {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'%3E%3Crect x='6' y='6' width='4' height='4' fill='%233f403c'/%3E%3C/svg%3E");
+    background-size: 16px 16px;
+    background-position: center;
+  }
+
+  /* Found: every link is a slot in the glass case; the chosen one lifts out with its hard shadow */
+  .nav[data-look="slots"] { gap: 8px; }
+  .nav[data-look="slots"] a, .nav[data-look="slots"] a:first-of-type {
+    --lift: 0px;
+    background: #e6ece7;
+    border: 4px solid var(--toner);
+    transform: translate(var(--lift), var(--lift));
+    box-shadow: calc(var(--lift) * -2) calc(var(--lift) * -2) 0 var(--toner);
+    transition: transform .12s steps(2), box-shadow .12s steps(2);
+  }
+  .nav[data-look="slots"] a:hover, .nav[data-look="slots"] a:focus-visible, .nav[data-look="slots"] a[aria-current] { --lift: -4px; background: #fbfbf7; }
+
+  /* Asked: each link is one of the counter's speech bubbles, and turns pink while it is being asked */
+  .nav[data-look="bubbles"] { --p: 4px; gap: 12px; padding-bottom: 12px; }
+  .nav[data-look="bubbles"] a, .nav[data-look="bubbles"] a:first-of-type {
+    position: relative;
+    isolation: isolate;
+    padding: 8px 16px 10px;
+    color: var(--paper);
+    transition: color .12s steps(2), transform .12s steps(2);
+  }
+  .nav[data-look="bubbles"] a::before, .nav[data-look="bubbles"] a::after { content: ""; position: absolute; z-index: -1; background: var(--toner); transition: background-color .12s steps(2); }
+  .nav[data-look="bubbles"] a::before {
+    inset: 0;
+    clip-path: polygon(
+      calc(var(--p) * 2) 0, calc(100% - var(--p) * 2) 0, calc(100% - var(--p) * 2) var(--p), calc(100% - var(--p)) var(--p),
+      calc(100% - var(--p)) calc(var(--p) * 2), 100% calc(var(--p) * 2), 100% calc(100% - var(--p) * 2), calc(100% - var(--p)) calc(100% - var(--p) * 2),
+      calc(100% - var(--p)) calc(100% - var(--p)), calc(100% - var(--p) * 2) calc(100% - var(--p)), calc(100% - var(--p) * 2) 100%, calc(var(--p) * 2) 100%,
+      calc(var(--p) * 2) calc(100% - var(--p)), var(--p) calc(100% - var(--p)), var(--p) calc(100% - var(--p) * 2), 0 calc(100% - var(--p) * 2),
+      0 calc(var(--p) * 2), var(--p) calc(var(--p) * 2), var(--p) var(--p), calc(var(--p) * 2) var(--p)
+    );
+  }
+  .nav[data-look="bubbles"] a::after {
+    top: 100%;
+    left: calc(var(--p) * 3);
+    width: calc(var(--p) * 3);
+    height: calc(var(--p) * 3);
+    clip-path: polygon(0 0, 100% 0, 100% var(--p), calc(var(--p) * 2) var(--p), calc(var(--p) * 2) calc(var(--p) * 2), var(--p) calc(var(--p) * 2), var(--p) 100%, 0 100%);
+  }
+  .nav[data-look="bubbles"] a:hover, .nav[data-look="bubbles"] a:focus-visible, .nav[data-look="bubbles"] a[aria-current] { color: var(--toner); transform: translateY(-4px); }
+  .nav[data-look="bubbles"] a:hover::before, .nav[data-look="bubbles"] a:hover::after,
+  .nav[data-look="bubbles"] a:focus-visible::before, .nav[data-look="bubbles"] a:focus-visible::after,
+  .nav[data-look="bubbles"] a[aria-current]::before, .nav[data-look="bubbles"] a[aria-current]::after { background: var(--stock); }
+
+  /* Rates: the rail is ruled off like the rate card, one line between every entry */
+  .nav[data-look="ledger"] a + a { border-top: 2px solid var(--toner); }
+
+  .nav.out { transition: transform .35s cubic-bezier(.5, 0, .9, .4); }
+  .nav.snap { transition: none; }
+  /* 100% is the strip's own height, so the stepped and bubbled strips clear the top as well */
+  .nav.hide-up { --nav-oy: calc(-1 * (var(--nav-y) + 100% + 40px)); }
+  .nav.hide-down { --nav-oy: calc(100vh - var(--nav-y) + 40px); }
+  .nav.hide-left { --nav-ox: calc(-1 * (var(--nav-x) + var(--nav-w) + 40px)); }
+  .nav.hide-right { --nav-ox: calc(100vw - var(--nav-x) + 40px); }
+  .nav[data-pos="top"] { --nav-w: 100vw; }
+  .nav[data-pos="bottom"] { --nav-w: 100vw; --nav-y: calc(100vh - var(--nav-h)); }
+  .nav[data-pos="top-right"] { --nav-x: calc(100vw - var(--nav-w)); }
+  .nav[data-pos="bottom-left"] { --nav-y: calc(100vh - var(--nav-h)); }
+  .nav[data-pos="float-top"] { --nav-x: calc((100vw - var(--nav-w)) / 2); --nav-y: 24px; }
+  .nav[data-pos="bottom-right"] { --nav-x: calc(100vw - var(--nav-w)); --nav-y: calc(100vh - var(--nav-h)); }
+  .nav[data-pos="float-bottom"] { --nav-x: calc((100vw - var(--nav-w)) / 2); --nav-y: calc(100vh - var(--nav-h) - 24px); }
+  .nav[data-pos="top-right"] a:first-of-type, .nav[data-pos="bottom-left"] a:first-of-type, .nav[data-pos="float-top"] a:first-of-type,
+  .nav[data-pos="bottom-right"] a:first-of-type, .nav[data-pos="top-left"] a:first-of-type, .nav[data-pos="float-bottom"] a:first-of-type { padding-left: 16px; }
+}
+.nav.snap { transition: none; }
+.nav[data-bare] { border-color: transparent; }
+/* links are set in the most worn cut and heal letter by letter to Redaction 10 on hover (see the nav script) */
+.nav a { font-family: "Redaction 100", "Times New Roman", Times, serif; font-size: 1.125rem; }
+/* over the hero, a game's title screen, the strip is a menu: no paper of its own so the sky runs behind it,
+   and in place of the bar a blinking pixel cursor points at the word */
+.nav[data-bare] .nav-bar { display: none; }
+.nav-cursor { display: none; }
+.nav[data-bare] .nav-cursor {
+  display: block;
+  position: absolute;
+  top: 12px;
+  left: 0;
+  width: 12px;
+  height: 20px;
+  background: var(--nav-fg);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='20' shape-rendering='crispEdges'%3E%3Crect width='4' height='20'/%3E%3Crect x='4' y='4' width='4' height='12'/%3E%3Crect x='8' y='8' width='4' height='4'/%3E%3C/svg%3E");
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='20' shape-rendering='crispEdges'%3E%3Crect width='4' height='20'/%3E%3Crect x='4' y='4' width='4' height='12'/%3E%3Crect x='8' y='8' width='4' height='4'/%3E%3C/svg%3E");
+  pointer-events: none;
+  animation: nav-blink 1s steps(1) infinite;
+}
+@keyframes nav-blink { 50% { opacity: 0; } }
+/* the rest of the title-screen menu: hard 8-bit shadows on the words, pixel dots between them, corners round the chosen one */
+.nav[data-bare] a { position: relative; text-shadow: 2px 2px 0 var(--hero-shade); }
+.nav[data-bare] a + a::before {
+  content: "";
+  position: absolute;
+  left: -11px; /* in the gap between two words, clear of the cursor */
+  top: 20px;
+  width: 4px;
+  height: 4px;
+  background: currentColor;
+  box-shadow: 2px 2px 0 var(--hero-shade);
+}
+.nav-frame { display: none; }
+.nav[data-bare] .nav-frame {
+  --c: var(--nav-fg);
+  display: block;
+  position: absolute;
+  top: 6px;
+  left: 0;
+  height: 32px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--c) 0 0) left top / 8px 4px, linear-gradient(var(--c) 0 0) left top / 4px 8px,
+    linear-gradient(var(--c) 0 0) right top / 8px 4px, linear-gradient(var(--c) 0 0) right top / 4px 8px,
+    linear-gradient(var(--c) 0 0) left bottom / 8px 4px, linear-gradient(var(--c) 0 0) left bottom / 4px 8px,
+    linear-gradient(var(--c) 0 0) right bottom / 8px 4px, linear-gradient(var(--c) 0 0) right bottom / 4px 8px;
+  background-repeat: no-repeat;
+  filter: drop-shadow(2px 2px 0 var(--hero-shade));
+}
+@media (prefers-reduced-motion: reduce) { .nav[data-bare] .nav-cursor { animation: none; } }
 .nav a:hover { text-decoration: underline; }
 .nav.live a:hover { text-decoration: none; }
 .nav a:focus-visible { outline-offset: -4px; }
-/* the redaction bar: white in difference mode, so it reads as toner and turns the text under it to paper */
+/* the redaction bar: difference mode, coloured from the script so it reads as the section's ink and turns the text under it to its paper */
 .nav-bar {
   position: absolute;
   top: 0;
@@ -697,7 +922,7 @@ a { color: inherit; }
 .lost-dots { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .lost h2, .lost p { position: relative; }
 /* full width, not shrunk to its text: a box exactly as wide as the line wraps on the smallest rounding error while the hover swaps cuts */
-.lost h2 { width: 100%; font-size: clamp(3.25rem, 12vw, 12rem); line-height: 1; letter-spacing: -.015em; }
+.lost h2 { width: 100%; font-size: clamp(2.75rem, 10vw, 10rem); line-height: 1; letter-spacing: -.015em; }
 .lost p { text-wrap: pretty; max-width: 30em; font-size: clamp(1.125rem, 1.6vw, 1.5rem); line-height: 1.4; }
 
 .journey-on .ladder-sheet { position: sticky; top: var(--zone-stick, 0px); z-index: 1; will-change: transform; }
@@ -733,7 +958,7 @@ a { color: inherit; }
 .journey-on .steps-inner {
   position: relative;
   height: 100%;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: 1fr;
   will-change: transform;
 }
 .journey-on .steps-inner h2 { padding-inline: var(--gut); font-size: clamp(2rem, 4vw, 3.5rem); }
@@ -1026,11 +1251,41 @@ a { color: inherit; }
   html { scroll-behavior: auto; }
   .rate, .rate::before { transition: none; }
 }
+/* Room for the nav. On wide screens the strip moves round the page, so each section keeps at least 48px between its text
+   and wherever the strip sits there: below it for the strips along the top, both sides for the standing rails (equal, so the content stays centred) */
+@media (min-width: 761px) {
+  .hero { padding-top: 104px; }                    /* menu ends ~52px down */
+  /* the lede stands further off the level above it; the content is centred, so the headline and level rise by half as much */
+  .hero-side { margin-top: clamp(32px, 6vh, 72px); }
+  /* the level drops by half that extra room, so it sits midway between headline and lede; a transform, so neither of them moves */
+  .level { transform: translateY(calc(clamp(32px, 6vh, 72px) / 2)); }
+  /* Found: the heading and slots stay together in the middle of the left column, not pushed apart to the bottom edge */
+  /* the heading sits on the top margin, the same 136px as the counter's heading in the next sheet */
+  .journey-on .found-left { justify-content: flex-start; gap: clamp(24px, 4vh, 48px); }
+  /* with the taller top margin the column has ~75vh left, so the heading and the square slots shrink to fit it instead of running off the bottom */
+  .journey-on .found { padding-bottom: 64px; }
+  .journey-on .found h2 { font-size: min(8.8vw, 13vh); }
+  .journey-on .found-list { width: min(100%, 52vh); }
+  /* the note moves under the slots: the heading names the case, the slots follow it, the note closes the column */
+  .journey-on .found-head { display: contents; }
+  .journey-on .found-list { order: 1; }
+  .journey-on .found-head p { order: 2; margin-top: 0; }
+  /* Asked: the heading matches Found's, two lines at the same size */
+  .journey-on .found h2, .journey-on .counter h2 { line-height: .92; }
+  .journey-on .counter h2 { font-size: min(8.8vw, 13vh); }
+  /* the question staircase was measured from a 72px top margin; it is now 136px, so each step comes up by the difference */
+  .journey-on .asks { --step: min(15.5vh, calc((100vh - 356px) / 3)); }
+  .journey-on .asks div { margin-top: calc(100vh - 176px - max(180px, 18.5vh) - var(--n) * var(--step)); }
+  .deck-on .deck-pin { padding-top: 152px; }       /* card and its shadow end ~84px down */
+  .journey-on .steps-sheet { padding-top: 160px; } /* the lowest step ends ~106px down */
+  .journey-on .found, .journey-on .counter { padding-top: 136px; } /* slots and bubbles end ~72px down */
+  #idea, #rates, #visit { padding-inline: calc(var(--gut) + 96px); } /* rail and its frame are ~52px wide */
+}
 </style>
 </head>
 <body>
 
-<nav class="nav" id="nav" aria-label="Sections">
+<nav class="nav snap" id="nav" aria-label="Sections" data-pos="hero" data-look="menu" data-bare style="--nav-bg: transparent; --nav-fg: var(--hero-ink)">
   <a href="#copier">Home</a>
   <a href="#idea">Idea</a>
   <a href="#generations">Generations</a>
@@ -1040,6 +1295,8 @@ a { color: inherit; }
   <a href="#asked">Asked</a>
   <a href="#rates">Rates</a>
   <span class="nav-bar" id="navBar" aria-hidden="true"></span>
+  <span class="nav-cursor" id="navCursor" aria-hidden="true"></span>
+  <span class="nav-frame" id="navFrame" aria-hidden="true"></span>
 </nav>
 
 <main>
@@ -1096,7 +1353,7 @@ a { color: inherit; }
         <canvas class="edge" data-from="--goldenrod" aria-hidden="true"></canvas>
         <canvas class="edge-v" id="edgeV" aria-hidden="true"></canvas>
         <div class="steps-inner" id="stepsInner">
-          <h2>How a job runs</h2>
+          <h2 class="sr-only">How a job runs</h2>
           <canvas class="birds" id="birds" aria-hidden="true"></canvas>
           <canvas class="walker" id="walker" aria-hidden="true"></canvas>
           <ol class="steps-row" id="stepsRow">
@@ -1150,7 +1407,7 @@ a { color: inherit; }
       <section class="counter" id="counterPanel">
         <span id="asked"></span>
         <canvas class="edge" data-from="--kraft" aria-hidden="true"></canvas>
-        <div class="counter-head"><h2 id="counterTitle">Asked at the counter</h2></div>
+        <div class="counter-head"><h2 id="counterTitle">Asked at <br>the counter</h2></div>
         <canvas class="clerk" aria-hidden="true"></canvas>
         <dl class="asks">
           <div><dt>Do you keep<br>a copy?</dt><dd>No. We clear the machine when your job is done.</dd></div>
@@ -1396,10 +1653,11 @@ a { color: inherit; }
     plate.setAttribute('aria-label', 'Copy of a copy, on purpose');
     ink.setAttribute('aria-hidden', 'true');
     var letters = splitLetters(ink).map(function (el, i) { return { el: el, neg: negLetters[i], cut: 0, rest: 0, x: 0, y: 0 }; });
-    /* at rest the headline decays as you read it: from crisp Redaction through 10, 20, 35, 50, 70 and 100 */
+    /* at rest the headline decays as you read it: from crisp Redaction through 10, 20, 35, 50 to 70 (the pointer and the intro can still wear it all the way to 100) */
+    var WORST = 5;
     letters.forEach(function (l, i) {
       l.restores = !!l.el.closest('em');
-      l.rest = l.cut = Math.min(6, Math.floor(i / letters.length * 7));
+      l.rest = l.cut = Math.min(WORST, Math.floor(i / letters.length * (WORST + 1)));
       setCut(l.el, l.rest);
       setCut(l.neg, l.rest);
     });
@@ -1860,10 +2118,11 @@ a { color: inherit; }
       negSheet.insertBefore(negCv, negSheet.firstChild);
       negCtx = negCv.getContext('2d');
     }
+    /* each hour's ink is a deep shade of its own sky (paper at night), used by the headline, the lede and the nav over the hero */
     var TIMES = {
-      morning: { bands: ['#7fc4ee', '#b9def0', '#f4e2cc', '#fbcfa6'], ink: '#121311', note: 'Longest queue at 7:40am on deadline day' },
-      noon: { bands: ['#56aee8', '#8ccbf0', '#bfe3f5', '#e9f5f6'], ink: '#121311', note: 'Bring a thesis before noon for same-day binding' },
-      dusk: { bands: ['#ff6ba9', '#ff8a7d', '#ffae5a', '#f5b800'], ink: '#121311', note: 'Open until 10pm in term time' },
+      morning: { bands: ['#7fc4ee', '#b9def0', '#f4e2cc', '#fbcfa6'], ink: '#10284a', note: 'Longest queue at 7:40am on deadline day' },
+      noon: { bands: ['#56aee8', '#8ccbf0', '#bfe3f5', '#e9f5f6'], ink: '#07223d', note: 'Bring a thesis before noon for same-day binding' },
+      dusk: { bands: ['#ff6ba9', '#ff8a7d', '#ffae5a', '#f5b800'], ink: '#5a2000', note: 'Open until 10pm in term time' },
       night: { bands: ['#0d1024', '#1a2148', '#3a4a7c', '#4a5a90'], ink: '#f2f3ef', note: 'Open until 2am in exam week' }
     };
     /* the small pictures on the buttons */
@@ -2035,6 +2294,9 @@ a { color: inherit; }
       heroTime = name;
       root.setProperty('--hero-foot', set.bands[3]);
       root.setProperty('--hero-ink', set.ink);
+      root.setProperty('--hero-top', set.bands[0]);
+      root.setProperty('--hero-shade', set.bands[2]);
+      if (window.navInk) window.navInk();
       /* the reveal wears the opposite hour's colours */
       root.setProperty('--neg-bg', TIMES[OPPOSITE[name]].bands[3]);
       root.setProperty('--neg-ink', TIMES[OPPOSITE[name]].ink);
@@ -2090,11 +2352,86 @@ a { color: inherit; }
   var navLinks = [].slice.call($('nav').querySelectorAll('a'));
   var navTargets = navLinks.map(function (a) { return document.querySelector(a.getAttribute('href')); });
   var navBarEl = $('navBar'), navActive = -1, navHover = -1;
+  var navEl = $('nav'), navWide = matchMedia('(min-width: 761px)');
+  /* where the strip sits in each section, its colours (the section's own), and the side it comes in from.
+     The pinned sections (Generations to Asked) spread their text across the screen and low down, so there it stays along the top;
+     the scrolling sheets have room in their margins for a standing rail */
+  var NAV_SECTIONS = [
+    { pos: 'hero', look: 'menu', bg: 'transparent', fg: 'var(--hero-ink)', bare: true, from: 'up' },
+    { pos: 'rail-left', look: 'redact', bg: 'var(--toner)', fg: 'var(--paper)', from: 'left' },
+    { pos: 'chip-right', look: 'card', bg: 'var(--paper)', fg: 'var(--toner)', from: 'right' },
+    { pos: 'chip-left', look: 'stairs', bg: 'var(--sky)', fg: 'var(--toner)', from: 'up' },
+    { pos: 'float-top', look: 'dots', bg: 'var(--toner)', fg: 'var(--paper)', from: 'up' },
+    { pos: 'chip-right', look: 'slots', bg: 'var(--kraft)', fg: 'var(--toner)', from: 'right' },
+    { pos: 'chip-left', look: 'bubbles', bg: 'var(--paper)', fg: 'var(--toner)', from: 'left' },
+    { pos: 'rail-right', look: 'ledger', bg: 'var(--stock)', fg: 'var(--toner)', from: 'down' }
+  ];
+  function navUpright() { return navWide.matches && /^rail/.test(navEl.dataset.pos || ''); }
+  var navShown = -1, navWant = -1, navBusy = false;
+  function navPlace(i) {
+    var sec = NAV_SECTIONS[i % NAV_SECTIONS.length];
+    navEl.dataset.pos = sec.pos;
+    navEl.dataset.look = sec.look;
+    navEl.style.setProperty('--nav-bg', sec.bg);
+    navEl.style.setProperty('--nav-fg', sec.fg);
+    if (sec.bare) navEl.dataset.bare = ''; else delete navEl.dataset.bare;
+    navShown = i;
+    navInk();
+    navBar.placed = false;
+    moveNavBar();
+  }
+  /* the bar works in difference mode, so its colour is the gap between ink and paper: it then shows as the ink, and the text under it as the paper */
+  var navProbe = document.createElement('span');
+  navProbe.hidden = true;
+  navEl.appendChild(navProbe);
+  function navRgb(value) {
+    navProbe.style.color = '';
+    navProbe.style.color = value;
+    return (getComputedStyle(navProbe).color.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(Number);
+  }
+  function navInk() {
+    if (navShown < 0) return;
+    var sec = NAV_SECTIONS[navShown % NAV_SECTIONS.length];
+    if (sec.bare) { navBarEl.style.background = ''; return; }
+    var fg = navRgb(sec.fg), bg = navRgb(sec.bg);
+    navBarEl.style.background = 'rgb(' + fg.map(function (c, k) { return Math.round(Math.abs(c - bg[k])); }).join(', ') + ')';
+  }
+  window.navInk = navInk;
+  /* out through the nearest edge, then back in from another side in the next section's colours */
+  function goNav(i) {
+    navWant = i;
+    if (navBusy) return;
+    if (navShown < 0 || reduce || !navWide.matches) {
+      /* the first placement (a fresh load or a refresh, wherever the page opens) lands without any slide or colour change */
+      var first = navShown < 0;
+      if (first) navEl.classList.add('snap');
+      navPlace(i);
+      if (first) { void navEl.offsetWidth; requestAnimationFrame(function () { requestAnimationFrame(function () { navEl.classList.remove('snap'); }); }); }
+      return;
+    }
+    if (i === navShown) return;
+    navBusy = true;
+    var was = NAV_SECTIONS[navShown % NAV_SECTIONS.length].pos;
+    var leaving = was === 'rail-left' ? 'hide-left' : was === 'rail-right' ? 'hide-right' : was.indexOf('bottom') >= 0 ? 'hide-down' : 'hide-up';
+    navEl.classList.add('out', leaving);
+    setTimeout(function () {
+      var next = navWant;
+      navEl.classList.add('snap');
+      navEl.classList.remove(leaving);
+      var entry = 'hide-' + NAV_SECTIONS[next % NAV_SECTIONS.length].from;
+      navPlace(next);
+      navEl.classList.add(entry);
+      void navEl.offsetWidth;
+      navEl.classList.remove('snap', 'out', entry);
+      setTimeout(function () { navBusy = false; if (navWant !== navShown) goNav(navWant); }, 650);
+    }, 380);
+  }
   function updateNav(vh, force) {
     var cur = 0;
     navTargets.forEach(function (t, i) { if (t.getBoundingClientRect().top <= vh * .4) cur = i; });
     if (cur === navActive && !force) return;
     navActive = cur;
+    goNav(cur);
     navLinks.forEach(function (a, i) {
       if (i === cur) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current');
     });
@@ -2110,15 +2447,39 @@ a { color: inherit; }
   /* the redaction bar: its leading edge moves first so it stretches and catches up */
   var navBar = { l: 0, r: 0, tl: 0, tr: 0, placed: false, running: false };
   $('nav').classList.add('live');
-  function paintNavBar() {
-    navBarEl.style.transform = 'translateX(' + navBar.l + 'px) scaleX(' + Math.max(1, navBar.r - navBar.l) + ')';
+  function paintNavBar(stepped) {
+    /* while it travels, the bar jumps a whole pixel cell at a time, like everything else on the page */
+    var l = stepped ? Math.round(navBar.l / 4) * 4 : navBar.l, r = stepped ? Math.round(navBar.r / 4) * 4 : navBar.r;
+    navBarEl.style.transform = navUpright()
+      ? 'translateY(' + l + 'px) scaleY(' + Math.max(1, r - l) + ')'
+      : 'translateX(' + l + 'px) scaleX(' + Math.max(1, r - l) + ')';
   }
   function moveNavBar() {
     var a = navLinks[navHover >= 0 ? navHover : Math.max(0, navActive)];
     /* exact fractional edges, so no sliver of paper shows beside the bar */
     var box = $('nav').getBoundingClientRect(), edge = a.getBoundingClientRect();
-    navBar.tl = edge.left - box.left + $('nav').scrollLeft;
-    navBar.tr = edge.right - box.left + $('nav').scrollLeft;
+    if (navEl.hasAttribute('data-bare')) {
+      /* a menu cursor jumps, it does not slide: it sits just left of the word */
+      var words = document.createRange();
+      words.selectNodeContents(a);
+      var word = words.getBoundingClientRect();
+      $('navCursor').style.transform = 'translateX(' + Math.round(word.left - box.left - 24) + 'px)';
+      /* pixel corners around the word, snapped to the 4px grid */
+      var fx = Math.round((word.left - box.left - 8) / 4) * 4, fw = Math.round((word.width + 16) / 4) * 4;
+      $('navFrame').style.transform = 'translateX(' + fx + 'px)';
+      $('navFrame').style.width = fw + 'px';
+      $('navCursor').style.animation = 'none';
+      void $('navCursor').offsetWidth;
+      $('navCursor').style.animation = '';
+    }
+    if (navUpright()) {
+      navBar.tl = edge.top - box.top - $('nav').clientTop;
+      navBar.tr = edge.bottom - box.top - $('nav').clientTop;
+    } else {
+      var inset = $('nav').clientLeft; /* the bar sits inside the border */
+      navBar.tl = edge.left - box.left - inset + $('nav').scrollLeft;
+      navBar.tr = edge.right - box.left - inset + $('nav').scrollLeft;
+    }
     if (reduce || !navBar.placed) {
       navBar.l = navBar.tl;
       navBar.r = navBar.tr;
@@ -2134,7 +2495,7 @@ a { color: inherit; }
     var dr = (navBar.tr - navBar.r) * (right ? .3 : .14);
     navBar.l += dl;
     navBar.r += dr;
-    paintNavBar();
+    paintNavBar(true);
     if (Math.max(Math.abs(dl), Math.abs(dr)) < .1) {
       navBar.l = navBar.tl;
       navBar.r = navBar.tr;
@@ -2144,13 +2505,41 @@ a { color: inherit; }
     }
     requestAnimationFrame(navFrame);
   }
+  /* each label is split into letters in the most worn cut; hovering heals them to Redaction 10, a few at a time */
+  navLinks.forEach(function (a) {
+    a.setAttribute('aria-label', a.textContent);
+    a.heal = splitLetters(a).map(function (el) {
+      el.setAttribute('aria-hidden', 'true');
+      setCut(el, 6);
+      return { el: el, cut: 6, wait: Math.floor(Math.random() * 4) };
+    });
+  });
+  function healTo(a, target) {
+    clearInterval(a.healTimer);
+    if (reduce) { a.heal.forEach(function (l) { l.cut = target; setCut(l.el, target); }); return; }
+    var tick = 0;
+    a.healTimer = setInterval(function () {
+      var done = true;
+      a.heal.forEach(function (l) {
+        if (l.cut === target) return;
+        done = false;
+        if (tick < l.wait) return;
+        l.cut += target > l.cut ? 1 : -1;
+        setCut(l.el, l.cut);
+      });
+      tick++;
+      if (done) clearInterval(a.healTimer);
+    }, 40);
+  }
   navLinks.forEach(function (a, i) {
     function enter() {
       navHover = i;
+      healTo(a, 1);
       moveNavBar();
     }
     function leave() {
       if (navHover === i) navHover = -1;
+      healTo(a, 6);
       moveNavBar();
     }
     a.addEventListener('mouseenter', enter);
