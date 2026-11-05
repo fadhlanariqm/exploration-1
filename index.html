@@ -1398,6 +1398,7 @@ a { color: inherit; }
     var letters = splitLetters(ink).map(function (el, i) { return { el: el, neg: negLetters[i], cut: 0, rest: 0, x: 0, y: 0 }; });
     /* at rest the headline decays as you read it: from crisp Redaction through 10, 20, 35, 50, 70 and 100 */
     letters.forEach(function (l, i) {
+      l.restores = !!l.el.closest('em');
       l.rest = l.cut = Math.min(6, Math.floor(i / letters.length * 7));
       setCut(l.el, l.rest);
       setCut(l.neg, l.rest);
@@ -1423,8 +1424,9 @@ a { color: inherit; }
     function step() {
       var reach = parseFloat(getComputedStyle(plate).fontSize) * .95, settled = true;
       letters.forEach(function (l, i) {
-        /* wear only ever adds to the resting cut, and heals back down to it */
-        var target = Math.max(l.rest, targetFor(l, i, reach));
+        /* wear adds to the resting cut and heals back down to it; "on purpose" rests worn, so the pointer does the reverse and restores it to Redaction */
+        var effect = targetFor(l, i, reach);
+        var target = pointer && l.restores ? Math.max(0, l.rest - effect) : Math.max(l.rest, effect);
         if (l.cut !== target) {
           l.cut += l.cut < target ? 1 : -1;
           setCut(l.el, l.cut);
