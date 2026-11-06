@@ -2523,11 +2523,35 @@ a { color: inherit; }
   }
 
   /* the redaction bar: its leading edge moves first so it stretches and catches up */
-  var navBar = { l: 0, r: 0, tl: 0, tr: 0, placed: false, running: false };
+  var navBar = { l: 0, r: 0, tl: 0, tr: 0, first: 0, last: 0, placed: false, running: false };
   $('nav').classList.add('live');
+  /* on the recipe card the strip has two-step corners, so the bar takes the same corners, a step smaller, at whichever end meets the card's edge */
+  var NAV_STEP = 4;
+  function navCaps(left, right) {
+    var q = NAV_STEP, pts = [];
+    pts.push(left ? q * 2 + 'px 0' : '0 0');
+    pts.push(right ? 'calc(100% - ' + q * 2 + 'px) 0' : '100% 0');
+    if (right) pts.push('calc(100% - ' + q * 2 + 'px) ' + q + 'px', 'calc(100% - ' + q + 'px) ' + q + 'px', 'calc(100% - ' + q + 'px) ' + q * 2 + 'px', '100% ' + q * 2 + 'px',
+      '100% calc(100% - ' + q * 2 + 'px)', 'calc(100% - ' + q + 'px) calc(100% - ' + q * 2 + 'px)', 'calc(100% - ' + q + 'px) calc(100% - ' + q + 'px)', 'calc(100% - ' + q * 2 + 'px) calc(100% - ' + q + 'px)', 'calc(100% - ' + q * 2 + 'px) 100%');
+    else pts.push('100% 100%');
+    pts.push(left ? q * 2 + 'px 100%' : '0 100%');
+    if (left) pts.push(q * 2 + 'px calc(100% - ' + q + 'px)', q + 'px calc(100% - ' + q + 'px)', q + 'px calc(100% - ' + q * 2 + 'px)', '0 calc(100% - ' + q * 2 + 'px)',
+      '0 ' + q * 2 + 'px', q + 'px ' + q * 2 + 'px', q + 'px ' + q + 'px', q * 2 + 'px ' + q + 'px');
+    return left || right ? 'polygon(' + pts.join(', ') + ')' : '';
+  }
   function paintNavBar(stepped) {
     /* while it travels, the bar jumps a whole pixel cell at a time, like everything else on the page */
     var l = stepped ? Math.round(navBar.l / 4) * 4 : navBar.l, r = stepped ? Math.round(navBar.r / 4) * 4 : navBar.r;
+    if (navEl.dataset.look === 'card' && !navUpright()) {
+      /* a real width rather than a stretched pixel, so the stepped corners keep their size */
+      var w = Math.max(1, r - l);
+      navBarEl.style.width = w + 'px';
+      navBarEl.style.transform = 'translateX(' + l + 'px)';
+      navBarEl.style.clipPath = navCaps(Math.abs(l - navBar.first) < 2, Math.abs(r - navBar.last) < 2);
+      return;
+    }
+    navBarEl.style.width = '';
+    navBarEl.style.clipPath = '';
     navBarEl.style.transform = navUpright()
       ? 'translateY(' + l + 'px) scaleY(' + Math.max(1, r - l) + ')'
       : 'translateX(' + l + 'px) scaleX(' + Math.max(1, r - l) + ')';
@@ -2558,6 +2582,8 @@ a { color: inherit; }
       var inset = $('nav').clientLeft; /* the bar sits inside the border */
       navBar.tl = edge.left - box.left - inset + $('nav').scrollLeft;
       navBar.tr = edge.right - box.left - inset + $('nav').scrollLeft;
+      navBar.first = navLinks[0].getBoundingClientRect().left - box.left - inset + $('nav').scrollLeft;
+      navBar.last = navLinks[navLinks.length - 1].getBoundingClientRect().right - box.left - inset + $('nav').scrollLeft;
     }
     if (reduce || !navBar.placed) {
       navBar.l = navBar.tl;
