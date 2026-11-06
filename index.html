@@ -16,6 +16,7 @@
   --hero-foot: #f2f3ef;
   --hero-ink: #07223d;
   --idea-bg: #07223d; /* Idea's paper, from the hero's hour */
+  --idea-bar: #56aee8;
   --hero-top: #56aee8; /* the sky's top band */
   --hero-shade: #bfe3f5; /* a lighter band, for the hard shadow under the hero menu */
   --neg-bg: #121311;
@@ -266,6 +267,9 @@ a { color: inherit; }
   .nav[data-pos="bottom-right"] a:first-of-type, .nav[data-pos="top-left"] a:first-of-type, .nav[data-pos="float-bottom"] a:first-of-type { padding-left: 16px; }
 }
 .nav.snap { transition: none; }
+/* sheets with a solid bar: it runs behind the words, and the word it sits on turns to the sheet's paper */
+.nav[data-solid] .nav-bar { mix-blend-mode: normal; z-index: -1; }
+.nav[data-solid] a.nav-on { color: var(--nav-on-ink); }
 .nav[data-bare] { border-color: transparent; }
 /* links are set in the most worn cut and heal letter by letter to Redaction 10 on hover (see the nav script) */
 .nav a { font-family: "Redaction 100", "Times New Roman", Times, serif; font-size: 1.125rem; }
@@ -404,9 +408,10 @@ a { color: inherit; }
 }
 /* the sky behind the title screen: four times of day in fat pixels */
 .sky { position: absolute; top: 0; left: 0; z-index: 0; image-rendering: pixelated; pointer-events: none; }
-.daypart { position: absolute; z-index: 6; right: var(--gut); bottom: 24px; display: grid; justify-items: end; gap: 8px; }
-.daypart-note { max-width: 24em; text-align: right; text-wrap: balance; }
-.daypart-row { display: flex; gap: 8px; }
+.daypart { position: absolute; right: var(--gut); bottom: 24px; display: grid; justify-items: end; gap: 8px; }
+/* the buttons stay above the other hour so they can be pressed; the note sits with the lede, under it, so the pointer's circle turns it over too */
+.daypart-note { position: relative; z-index: 3; max-width: 24em; text-align: right; text-wrap: balance; }
+.daypart-row { position: relative; z-index: 6; display: flex; gap: 8px; }
 .daypart button {
   --lift: 0px;
   width: 44px;
@@ -422,6 +427,29 @@ a { color: inherit; }
 .daypart button:hover { --lift: -2px; }
 .daypart button[aria-pressed="true"] { --lift: -4px; background-color: var(--stock); }
 .daypart button:focus-visible { outline: 4px solid currentColor; outline-offset: 2px; }
+/* on wide screens the hours stand in a column on the right edge, halfway down the title screen */
+@media (min-width: 1100px) {
+  /* centred by margin, not transform, so the column does not make a layer of its own and the note can sit under the other hour */
+  .daypart { top: 50%; bottom: auto; margin-top: -100px; } /* four 44px buttons, 8px apart */
+  .hero-neg .daypart { top: calc(50% - 64px); } /* the other hour reaches 128px further down, so its middle is 64px lower */
+  .daypart-row { flex-direction: column; }
+  /* the hour's note stands beside the chosen button, reading into it: narrow and two lines at most, so it stays clear of the copier, and it steps to the next button with the choice */
+  .daypart-note {
+    position: absolute;
+    right: calc(100% + 16px);
+    top: calc(var(--hour, 0) * 52px + 22px); /* 44px buttons, 8px apart */
+    transform: translateY(-50%);
+    width: max-content;
+    max-width: 12em;
+    text-align: right;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    transition: top .18s steps(3);
+  }
+}
 @media (max-width: 1099px) {
   .daypart { position: relative; right: auto; bottom: auto; grid-row: 4; justify-items: center; }
   .daypart-note { text-align: center; }
@@ -1653,7 +1681,8 @@ a { color: inherit; }
     });
     /* holds the same row the page has when the buttons drop into the flow, so both versions stay lined up */
     var negDay = hero.querySelector('.daypart').cloneNode(true);
-    negDay.style.visibility = 'hidden';
+    /* only its buttons are hidden: its note shows through the circle in the other hour's ink */
+    negDay.querySelector('.daypart-row').style.visibility = 'hidden';
     neg.appendChild(negDay);
     var negInk = neg.querySelector('#inkNow');
     negInk.removeAttribute('id');
@@ -2132,8 +2161,8 @@ a { color: inherit; }
     }
     /* each hour's ink is a deep shade of its own sky (paper at night), used by the headline, the lede and the nav over the hero */
     var TIMES = {
-      morning: { bands: ['#7fc4ee', '#b9def0', '#f4e2cc', '#fbcfa6'], ink: '#10284a', note: 'Longest queue at 7:40am on deadline day' },
-      noon: { bands: ['#56aee8', '#8ccbf0', '#bfe3f5', '#e9f5f6'], ink: '#07223d', note: 'Bring a thesis before noon for same-day binding' },
+      morning: { bands: ['#7fc4ee', '#b9def0', '#f4e2cc', '#fbcfa6'], ink: '#10284a', note: 'Busiest at 7:40am on deadline day' },
+      noon: { bands: ['#56aee8', '#8ccbf0', '#bfe3f5', '#e9f5f6'], ink: '#07223d', note: 'Thesis in by noon, bound same day' },
       dusk: { bands: ['#ff6ba9', '#ff8a7d', '#ffae5a', '#f5b800'], ink: '#5a2000', note: 'Open until 10pm in term time' },
       night: { bands: ['#0d1024', '#1a2148', '#3a4a7c', '#4a5a90'], ink: '#f2f3ef', note: 'Open until 2am in exam week' }
     };
@@ -2310,6 +2339,8 @@ a { color: inherit; }
       root.setProperty('--hero-shade', set.bands[2]);
       /* Idea, the sheet under the hero, is printed in the hour's ink; at night the ink is paper, so it takes the night sky instead */
       root.setProperty('--idea-bg', name === 'night' ? set.bands[1] : set.ink);
+      /* its nav marks the current link in the top of the hour's sky, or paper at night */
+      root.setProperty('--idea-bar', name === 'night' ? '#f2f3ef' : set.bands[0]);
       if (window.navInk) window.navInk();
       /* the reveal wears the opposite hour's colours */
       root.setProperty('--neg-bg', TIMES[OPPOSITE[name]].bands[3]);
@@ -2323,6 +2354,9 @@ a { color: inherit; }
       now = name;
       buttons.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.time === name ? 'true' : 'false'); });
       notes.forEach(function (n) { n.textContent = TIMES[name].note; });
+      /* which button is chosen, so the note can stand beside it */
+      var hour = buttons.findIndex(function (b) { return b.dataset.time === name; });
+      [].forEach.call(document.querySelectorAll('.daypart'), function (d) { d.style.setProperty('--hour', hour); });
       if (instant || reduce || !from) { fade = 1; dress(name); draw(); return; }
       fade = 0;
       dressed = false;
@@ -2372,7 +2406,7 @@ a { color: inherit; }
      the scrolling sheets have room in their margins for a standing rail */
   var NAV_SECTIONS = [
     { pos: 'hero', look: 'menu', bg: 'transparent', fg: 'var(--hero-ink)', bare: true, from: 'up' },
-    { pos: 'rail-left', look: 'redact', bg: 'var(--idea-bg)', fg: 'var(--paper)', from: 'left' },
+    { pos: 'rail-left', look: 'redact', bg: 'var(--idea-bg)', fg: 'var(--paper)', bar: 'var(--idea-bar)', barInk: 'var(--idea-bg)', from: 'left' },
     { pos: 'chip-right', look: 'card', bg: 'var(--paper)', fg: 'var(--toner)', from: 'right' },
     { pos: 'chip-left', look: 'stairs', bg: 'var(--sky)', fg: 'var(--toner)', from: 'up' },
     { pos: 'float-top', look: 'dots', bg: 'var(--toner)', fg: 'var(--paper)', from: 'up' },
@@ -2409,7 +2443,15 @@ a { color: inherit; }
     if (navShown < 0) return;
     var sec = NAV_SECTIONS[navShown % NAV_SECTIONS.length];
     if (sec.gone) return;
+    if (!sec.bar) delete navEl.dataset.solid;
     if (sec.bare) { navBarEl.style.background = ''; return; }
+    /* a solid bar in a colour of its own, behind the words, and the word on it in the sheet's paper */
+    if (sec.bar) {
+      navEl.dataset.solid = '';
+      navBarEl.style.background = sec.bar;
+      navEl.style.setProperty('--nav-on-ink', sec.barInk);
+      return;
+    }
     var fg = navRgb(sec.fg), bg = navRgb(sec.bg);
     navBarEl.style.background = 'rgb(' + fg.map(function (c, k) { return Math.round(Math.abs(c - bg[k])); }).join(', ') + ')';
   }
@@ -2492,6 +2534,7 @@ a { color: inherit; }
   }
   function moveNavBar() {
     var a = navLinks[navHover >= 0 ? navHover : Math.max(0, navActive)];
+    navLinks.forEach(function (l) { l.classList.toggle('nav-on', l === a); });
     /* exact fractional edges, so no sliver of paper shows beside the bar */
     var box = $('nav').getBoundingClientRect(), edge = a.getBoundingClientRect();
     if (navEl.hasAttribute('data-bare')) {
