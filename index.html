@@ -15,6 +15,7 @@
   --paper: #f2f3ef;
   --hero-foot: #f2f3ef;
   --hero-ink: #07223d;
+  --idea-bg: #07223d; /* Idea's paper, from the hero's hour */
   --hero-top: #56aee8; /* the sky's top band */
   --hero-shade: #bfe3f5; /* a lighter band, for the hard shadow under the hero menu */
   --neg-bg: #121311;
@@ -331,6 +332,12 @@ a { color: inherit; }
   transform-origin: 0 50%;
   pointer-events: none;
 }
+/* The hero holds still and Idea slides up over it like the next sheet on the pile. It only sticks inside the cover,
+   so once Idea has passed it scrolls away; a hero taller than the screen first scrolls to its foot (--hero-stick, from the script) */
+.cover > .hero { position: sticky; top: var(--hero-stick, 0px); z-index: 0; }
+.cover > #idea { z-index: 1; }
+/* Idea's top edge is see-through: its black arrives as pixels over whatever part of the hero is behind it, so no band of the hero's colour is painted on */
+.cover > #idea { background: linear-gradient(transparent 127px, var(--idea-bg) 127px); }
 /* Hero: the copier glass */
 /* stacked above the next section, so the pixel reveal can run over its dithered edge */
 /* A game's title screen: everything centred, bold headline, then the level on a short floor, then the small print */
@@ -1279,7 +1286,7 @@ a { color: inherit; }
   .deck-on .deck-pin { padding-top: 152px; }       /* card and its shadow end ~84px down */
   .journey-on .steps-sheet { padding-top: 160px; } /* the lowest step ends ~106px down */
   .journey-on .found, .journey-on .counter { padding-top: 136px; } /* slots and bubbles end ~72px down */
-  #idea, #rates, #visit { padding-inline: calc(var(--gut) + 96px); } /* rail and its frame are ~52px wide */
+  #idea, #rates { padding-inline: calc(var(--gut) + 96px); } /* rail and its frame are ~52px wide */
 }
 </style>
 </head>
@@ -1300,6 +1307,7 @@ a { color: inherit; }
 </nav>
 
 <main>
+  <div class="cover" id="cover">
   <section class="hero" id="copier">
     <canvas class="sky" id="sky" aria-hidden="true"></canvas>
 
@@ -1326,16 +1334,17 @@ a { color: inherit; }
   </section>
 
   <section class="sheet reverse" id="idea">
-    <canvas class="edge" data-from="--hero-foot" aria-hidden="true"></canvas>
+    <canvas class="edge" data-from="--hero-foot" data-over="--idea-bg" aria-hidden="true"></canvas>
     <p class="side-label label">The idea</p>
     <p class="read" data-read>Every copy loses something. A little ink off the curves, a speck from the glass, a shadow where the lid would not close.</p>
     <p class="read" data-read>Bring us your lecture notes, your band flyer, your grandmother's recipe, and we will run it as clean as the glass allows.</p>
     <p class="read" data-read>Or run it seven times, until the words start to crumble, and staple that instead.</p>
   </section>
+  </div>
 
   <div class="zone" id="zone">
   <section class="sheet ladder-sheet" id="generations">
-    <canvas class="edge" data-from="--toner" aria-hidden="true"></canvas>
+    <canvas class="edge" data-from="--idea-bg" aria-hidden="true"></canvas>
     <div class="deck-pin">
       <div class="section-head">
         <h2>One recipe card, seven times over</h2>
@@ -2069,7 +2078,7 @@ a { color: inherit; }
   /* ---------- Bayer-dither edges between paper stocks ---------- */
   var CELL = 8, ROWS = 16;
   var edges = [].map.call(document.querySelectorAll('.edge'), function (cv) {
-    return { cv: cv, ctx: cv.getContext('2d'), token: cv.dataset.from, q: -1, cols: 0 };
+    return { cv: cv, ctx: cv.getContext('2d'), token: cv.dataset.from, over: cv.dataset.over, q: -1, cols: 0 };
   });
   function sizeEdges() {
     edges.forEach(function (ed) {
@@ -2085,12 +2094,15 @@ a { color: inherit; }
     var ctx = ed.ctx, p = q / 40, gamma = .55 + p * 1.5;
     ctx.clearRect(0, 0, ed.cols, ROWS);
     var base = tokenColor(ed.token), blend = ed.token === '--stock' ? edgeBlend : null;
+    /* a see-through edge paints the other half of the pattern, in its own sheet's colour, and leaves the rest clear */
+    if (ed.over) base = tokenColor(ed.over);
     ctx.fillStyle = base;
     for (var y = 0; y < ROWS; y++) {
       var f = Math.pow(1 - (y + .5) / ROWS, gamma);
       for (var x = 0; x < ed.cols; x++) {
         var limit = (BAYER[y % 8][x % 8] + .5) / 64 + (grit(x, y) - .5) * .12;
-        if (y !== 0 && limit >= f) continue;
+        var above = y === 0 || limit < f;
+        if (ed.over ? above : !above) continue;
         if (blend) ctx.fillStyle = grit(y, x) < blend.mix ? blend.color : base;
         ctx.fillRect(x, y, 1, 1);
       }
@@ -2296,6 +2308,8 @@ a { color: inherit; }
       root.setProperty('--hero-ink', set.ink);
       root.setProperty('--hero-top', set.bands[0]);
       root.setProperty('--hero-shade', set.bands[2]);
+      /* Idea, the sheet under the hero, is printed in the hour's ink; at night the ink is paper, so it takes the night sky instead */
+      root.setProperty('--idea-bg', name === 'night' ? set.bands[1] : set.ink);
       if (window.navInk) window.navInk();
       /* the reveal wears the opposite hour's colours */
       root.setProperty('--neg-bg', TIMES[OPPOSITE[name]].bands[3]);
@@ -2358,16 +2372,18 @@ a { color: inherit; }
      the scrolling sheets have room in their margins for a standing rail */
   var NAV_SECTIONS = [
     { pos: 'hero', look: 'menu', bg: 'transparent', fg: 'var(--hero-ink)', bare: true, from: 'up' },
-    { pos: 'rail-left', look: 'redact', bg: 'var(--toner)', fg: 'var(--paper)', from: 'left' },
+    { pos: 'rail-left', look: 'redact', bg: 'var(--idea-bg)', fg: 'var(--paper)', from: 'left' },
     { pos: 'chip-right', look: 'card', bg: 'var(--paper)', fg: 'var(--toner)', from: 'right' },
     { pos: 'chip-left', look: 'stairs', bg: 'var(--sky)', fg: 'var(--toner)', from: 'up' },
     { pos: 'float-top', look: 'dots', bg: 'var(--toner)', fg: 'var(--paper)', from: 'up' },
     { pos: 'chip-right', look: 'slots', bg: 'var(--kraft)', fg: 'var(--toner)', from: 'right' },
     { pos: 'chip-left', look: 'bubbles', bg: 'var(--paper)', fg: 'var(--toner)', from: 'left' },
-    { pos: 'rail-right', look: 'ledger', bg: 'var(--stock)', fg: 'var(--toner)', from: 'down' }
+    { pos: 'rail-right', look: 'ledger', bg: 'var(--stock)', fg: 'var(--toner)', from: 'down' },
+    /* the footer: the strip leaves and stays gone */
+    { gone: true }
   ];
   function navUpright() { return navWide.matches && /^rail/.test(navEl.dataset.pos || ''); }
-  var navShown = -1, navWant = -1, navBusy = false;
+  var navShown = -1, navWant = -1, navBusy = false, navWhere = -1, navFoot = $('visit');
   function navPlace(i) {
     var sec = NAV_SECTIONS[i % NAV_SECTIONS.length];
     navEl.dataset.pos = sec.pos;
@@ -2392,46 +2408,66 @@ a { color: inherit; }
   function navInk() {
     if (navShown < 0) return;
     var sec = NAV_SECTIONS[navShown % NAV_SECTIONS.length];
+    if (sec.gone) return;
     if (sec.bare) { navBarEl.style.background = ''; return; }
     var fg = navRgb(sec.fg), bg = navRgb(sec.bg);
     navBarEl.style.background = 'rgb(' + fg.map(function (c, k) { return Math.round(Math.abs(c - bg[k])); }).join(', ') + ')';
   }
   window.navInk = navInk;
   /* out through the nearest edge, then back in from another side in the next section's colours */
+  function navExit(pos) {
+    return pos === 'rail-left' ? 'hide-left' : pos === 'rail-right' ? 'hide-right' : pos.indexOf('bottom') >= 0 ? 'hide-down' : 'hide-up';
+  }
   function goNav(i) {
     navWant = i;
     if (navBusy) return;
+    var to = NAV_SECTIONS[i];
     if (navShown < 0 || reduce || !navWide.matches) {
       /* the first placement (a fresh load or a refresh, wherever the page opens) lands without any slide or colour change */
       var first = navShown < 0;
       if (first) navEl.classList.add('snap');
-      navPlace(i);
+      if (to.gone) { navShown = i; navEl.style.visibility = 'hidden'; }
+      else { navEl.style.visibility = ''; navPlace(i); }
       if (first) { void navEl.offsetWidth; requestAnimationFrame(function () { requestAnimationFrame(function () { navEl.classList.remove('snap'); }); }); }
       return;
     }
     if (i === navShown) return;
     navBusy = true;
-    var was = NAV_SECTIONS[navShown % NAV_SECTIONS.length].pos;
-    var leaving = was === 'rail-left' ? 'hide-left' : was === 'rail-right' ? 'hide-right' : was.indexOf('bottom') >= 0 ? 'hide-down' : 'hide-up';
-    navEl.classList.add('out', leaving);
+    var from = NAV_SECTIONS[navShown];
+    /* off screen already if it is coming back from the footer */
+    var leaving = from.gone ? navEl.dataset.gone : navExit(from.pos);
+    if (!from.gone) navEl.classList.add('out', leaving);
     setTimeout(function () {
       var next = navWant;
+      if (NAV_SECTIONS[next].gone) {
+        /* into the footer: stay parked off screen, out of reach of the keyboard too */
+        navEl.dataset.gone = leaving;
+        navEl.classList.remove('out');
+        navEl.style.visibility = 'hidden';
+        navShown = next;
+        navBusy = false;
+        if (navWant !== navShown) goNav(navWant);
+        return;
+      }
+      navEl.style.visibility = '';
       navEl.classList.add('snap');
-      navEl.classList.remove(leaving);
-      var entry = 'hide-' + NAV_SECTIONS[next % NAV_SECTIONS.length].from;
+      if (leaving) navEl.classList.remove(leaving);
+      var entry = 'hide-' + NAV_SECTIONS[next].from;
       navPlace(next);
       navEl.classList.add(entry);
       void navEl.offsetWidth;
       navEl.classList.remove('snap', 'out', entry);
       setTimeout(function () { navBusy = false; if (navWant !== navShown) goNav(navWant); }, 650);
-    }, 380);
+    }, from.gone ? 0 : 380);
   }
   function updateNav(vh, force) {
     var cur = 0;
     navTargets.forEach(function (t, i) { if (t.getBoundingClientRect().top <= vh * .4) cur = i; });
+    /* past the rates the footer takes over, and the strip leaves */
+    var where = navFoot.getBoundingClientRect().top <= vh * .4 ? NAV_SECTIONS.length - 1 : cur;
+    if (where !== navWhere) { navWhere = where; goNav(where); }
     if (cur === navActive && !force) return;
     navActive = cur;
-    goNav(cur);
     navLinks.forEach(function (a, i) {
       if (i === cur) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current');
     });
@@ -3301,7 +3337,15 @@ a { color: inherit; }
   }
   function schedule() { if (!queued) { queued = true; requestAnimationFrame(frame); } }
   addEventListener('scroll', schedule, { passive: true });
+  /* the hero sticks once its foot reaches the bottom of the screen, so a hero taller than the screen is still read to the end */
+  function stickHero() {
+    var hero = $('copier');
+    hero.style.setProperty('--hero-stick', Math.min(0, innerHeight - hero.offsetHeight) + 'px');
+  }
+  stickHero();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(stickHero);
   addEventListener('resize', function () {
+    stickHero();
     sizeEdges();
     updateEdges(innerHeight, true);
     navBar.placed = false;
